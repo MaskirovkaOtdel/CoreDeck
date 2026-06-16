@@ -1,0 +1,179 @@
+@model Cart
+
+@{
+    ViewData["Title"] = "Shopping Cart";
+}
+
+<h2 class="mb-4"><i class="fas fa-shopping-cart"></i> Shopping Cart</h2>
+
+@if (Model?.CartItems.Count == 0)
+{
+    <div class="alert alert-info text-center py-5" role="alert">
+        <i class="fas fa-inbox fa-3x mb-3"></i>
+        <h4>Your cart is empty</h4>
+        <p class="text-muted mb-3">Start adding some amazing tech products!</p>
+        <a href="@Url.Action("Index", "Product")" class="btn btn-primary">
+            <i class="fas fa-shopping-bag"></i> Continue Shopping
+        </a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Items in Cart (@Model.CartItems.Count)</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.CartItems)
+                            {
+                                <tr class="align-middle">
+                                    <!-- Product -->
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="@item.Product?.ImageUrl" 
+                                                 alt="@item.Product?.Name" 
+                                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;" />
+                                            <div>
+                                                <a href="@Url.Action("Details", "Product", new { id = item.ProductId })" 
+                                                   class="text-decoration-none">
+                                                    <h6 class="mb-1">@item.Product?.Name</h6>
+                                                </a>
+                                                <small class="text-muted">@item.Product?.Category?.Name</small>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Price -->
+                                    <td>
+                                        <strong>€@item.UnitPrice.ToString("F2")</strong>
+                                    </td>
+
+                                    <!-- Quantity -->
+                                    <td>
+                                        <form asp-controller="Cart" asp-action="UpdateQuantity" method="post" class="d-inline">
+                                            <input type="hidden" name="cartItemId" value="@item.Id" />
+                                            <div class="input-group" style="width: 100px;">
+                                                <button type="submit" name="quantity" value="@(item.Quantity - 1)" 
+                                                        class="btn btn-outline-secondary btn-sm"
+                                                        @(item.Quantity <= 1 ? "disabled" : "")>−</button>
+                                                <span class="input-group-text bg-light border-0">@item.Quantity</span>
+                                                <button type="submit" name="quantity" value="@(item.Quantity + 1)" 
+                                                        class="btn btn-outline-secondary btn-sm">+</button>
+                                            </div>
+                                        </form>
+                                    </td>
+
+                                    <!-- Total -->
+                                    <td>
+                                        <strong class="text-primary">€@item.GetTotalPrice().ToString("F2")</strong>
+                                    </td>
+
+                                    <!-- Remove -->
+                                    <td>
+                                        <form asp-controller="Cart" asp-action="RemoveFromCart" method="post" class="d-inline">
+                                            <input type="hidden" name="cartItemId" value="@item.Id" />
+                                            <button type="submit" class="btn btn-danger btn-sm" title="Remove">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Continue Shopping -->
+            <div class="mt-3">
+                <a href="@Url.Action("Index", "Product")" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Continue Shopping
+                </a>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow sticky-top" style="top: 80px;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Calculations -->
+                    <div class="row mb-2">
+                        <div class="col-6">Subtotal:</div>
+                        <div class="col-6 text-end">€@Model.GetTotalPrice().ToString("F2")</div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-6">Shipping:</div>
+                        <div class="col-6 text-end">
+                            @if (Model.GetTotalPrice() >= 50)
+                            {
+                                <span class="badge bg-success">FREE</span>
+                            }
+                            else
+                            {
+                                <span>€5.00</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">Tax (19%):</div>
+                        <div class="col-6 text-end">€@(Model.GetTotalPrice() * 0.19m).ToString("F2")</div>
+                    </div>
+
+                    <hr />
+
+                    <!-- Total -->
+                    <div class="row mb-4">
+                        <div class="col-6"><strong>Total:</strong></div>
+                        <div class="col-6 text-end">
+                            <h5 class="text-primary mb-0">
+                                €@(Model.GetTotalPrice() * 1.19m + (Model.GetTotalPrice() < 50 ? 5 : 0)).ToString("F2")
+                            </h5>
+                        </div>
+                    </div>
+
+                    <!-- Checkout Button -->
+                    <a href="@Url.Action("Checkout", "Cart")" class="btn btn-primary btn-lg w-100 mb-2">
+                        <i class="fas fa-credit-card"></i> Proceed to Checkout
+                    </a>
+
+                    <!-- Promo Code -->
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Promo code" />
+                        <button class="btn btn-outline-secondary" type="button">Apply</button>
+                    </div>
+
+                    <!-- Info Cards -->
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="d-flex mb-3">
+                            <i class="fas fa-lock text-success me-2"></i>
+                            <small class="text-muted">Secure checkout with SSL encryption</small>
+                        </div>
+                        <div class="d-flex">
+                            <i class="fas fa-undo text-warning me-2"></i>
+                            <small class="text-muted">30-day return guarantee</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

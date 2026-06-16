@@ -1,0 +1,214 @@
+@model Cart
+
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<h2 class="mb-4"><i class="fas fa-cash-register"></i> Checkout</h2>
+
+@if (Model?.CartItems.Count == 0)
+{
+    <div class="alert alert-warning">
+        <p>Your cart is empty. <a href="@Url.Action("Index", "Product")">Continue shopping</a></p>
+    </div>
+}
+else
+{
+    <form asp-controller="Cart" asp-action="PlaceOrder" method="post">
+        <div class="row g-4">
+            <!-- Checkout Form -->
+            <div class="col-lg-8">
+                <!-- Shipping Information -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Shipping Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="shippingAddress" class="form-label">Street Address *</label>
+                            <input type="text" class="form-control" id="shippingAddress" name="shippingAddress" required />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="city" class="form-label">City *</label>
+                                <input type="text" class="form-control" id="city" name="city" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="postalCode" class="form-label">Postal Code *</label>
+                                <input type="text" class="form-control" id="postalCode" name="postalCode" required />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="country" class="form-label">Country *</label>
+                            <select class="form-select" id="country" name="country" required>
+                                <option value="">Select a country</option>
+                                <option value="Greece">Greece</option>
+                                <option value="Germany">Germany</option>
+                                <option value="France">France</option>
+                                <option value="Spain">Spain</option>
+                                <option value="Italy">Italy</option>
+                                <option value="United Kingdom">United Kingdom</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Items Review -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-list"></i> Order Review</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.CartItems)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <img src="@item.Product?.ImageUrl" 
+                                                     alt="@item.Product?.Name" 
+                                                     style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />
+                                                <span>@item.Product?.Name</span>
+                                            </div>
+                                        </td>
+                                        <td>@item.Quantity</td>
+                                        <td>€@item.UnitPrice.ToString("F2")</td>
+                                        <td><strong>€@item.GetTotalPrice().ToString("F2")</strong></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> Payment Method</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle"></i>
+                            Secure payment processing. Your data is encrypted and protected.
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="paymentMethod" id="credit-card" value="credit-card" checked />
+                                <label class="form-check-label" for="credit-card">
+                                    <i class="fas fa-credit-card"></i> Credit/Debit Card
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="paymentMethod" id="paypal" value="paypal" />
+                                <label class="form-check-label" for="paypal">
+                                    <i class="fab fa-cc-paypal"></i> PayPal
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-light">
+                            <p class="text-muted mb-0">
+                                <small>
+                                    <i class="fas fa-check-circle text-success"></i> 
+                                    Payment gateway will be integrated in the next phase. 
+                                    For now, this is a demo checkout.
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary Sidebar -->
+            <div class="col-lg-4">
+                <div class="card shadow sticky-top" style="top: 80px;">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        @{
+                            decimal subtotal = Model.GetTotalPrice();
+                            decimal shipping = subtotal >= 50 ? 0 : 5;
+                            decimal tax = subtotal * 0.19m;
+                            decimal total = subtotal + shipping + tax;
+                        }
+
+                        <div class="row mb-2">
+                            <div class="col-6">Subtotal:</div>
+                            <div class="col-6 text-end">€@subtotal.ToString("F2")</div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-6">Shipping:</div>
+                            <div class="col-6 text-end">
+                                @if (shipping == 0)
+                                {
+                                    <span class="badge bg-success">FREE</span>
+                                }
+                                else
+                                {
+                                    <span>€@shipping.ToString("F2")</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-6">Tax (19%):</div>
+                            <div class="col-6 text-end">€@tax.ToString("F2")</div>
+                        </div>
+
+                        <hr />
+
+                        <div class="row mb-4">
+                            <div class="col-6"><strong>Total Amount:</strong></div>
+                            <div class="col-6 text-end">
+                                <h5 class="text-primary mb-0">€@total.ToString("F2")</h5>
+                            </div>
+                        </div>
+
+                        <!-- T&C -->
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="terms" required />
+                            <label class="form-check-label" for="terms">
+                                <small>I agree to the Terms & Conditions and Privacy Policy</small>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-lg w-100 mb-2">
+                            <i class="fas fa-check-circle"></i> Complete Order
+                        </button>
+
+                        <a href="@Url.Action("Index", "Cart")" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-arrow-left"></i> Back to Cart
+                        </a>
+
+                        <!-- Security Badges -->
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-center gap-2">
+                                <small class="text-muted text-center">
+                                    <i class="fas fa-lock text-success"></i> Secure Checkout
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+}

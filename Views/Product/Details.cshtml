@@ -1,0 +1,193 @@
+@model Product
+
+@{
+    ViewData["Title"] = Model.Name;
+    var categories = (List<Category>?)ViewData["Categories"] ?? new();
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")">Home</a></li>
+        <li class="breadcrumb-item"><a href="@Url.Action("Index", "Product")">Products</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+    </ol>
+</nav>
+
+<div class="row g-4">
+    <!-- Product Image -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-lg">
+            <img src="@Model.ImageUrl" 
+                 class="card-img-top img-fluid" 
+                 alt="@Model.Name"
+                 style="height: 500px; object-fit: cover;" />
+        </div>
+
+        <!-- Related Info -->
+        <div class="mt-4">
+            <div class="alert alert-light border">
+                <h6 class="text-muted mb-2">Category</h6>
+                <span class="badge bg-primary">@Model.Category?.Name</span>
+            </div>
+
+            <div class="alert alert-light border">
+                <h6 class="text-muted mb-2">Product Added</h6>
+                <small>@Model.CreatedDate.ToString("MMMM dd, yyyy")</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Details -->
+    <div class="col-lg-7">
+        <div class="card border-0">
+            <div class="card-body p-4">
+                <!-- Title -->
+                <h1 class="card-title mb-2">@Model.Name</h1>
+                <p class="text-muted mb-4">SKU: TECH-@Model.Id.ToString("D6")</p>
+
+                <!-- Rating Placeholder -->
+                <div class="mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="text-warning">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <span class="ms-2 text-muted">(127 reviews)</span>
+                    </div>
+                </div>
+
+                <hr />
+
+                <!-- Price Section -->
+                <div class="mb-4">
+                    <h2 class="text-primary mb-0">€@Model.Price.ToString("F2")</h2>
+                    <small class="text-muted">Inclusive of all taxes</small>
+                </div>
+
+                <!-- Stock Status -->
+                <div class="mb-4">
+                    @if (Model.Stock > 10)
+                    {
+                        <span class="badge bg-success p-2">
+                            <i class="fas fa-check-circle"></i> In Stock (@Model.Stock available)
+                        </span>
+                    }
+                    else if (Model.Stock > 0)
+                    {
+                        <span class="badge bg-warning p-2">
+                            <i class="fas fa-exclamation-triangle"></i> Limited Stock (@Model.Stock available)
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger p-2">
+                            <i class="fas fa-times-circle"></i> Out of Stock
+                        </span>
+                    }
+                </div>
+
+                <!-- Description -->
+                <div class="mb-4">
+                    <h5>Description</h5>
+                    <p>@Model.Description</p>
+                </div>
+
+                <!-- Add to Cart Form -->
+                @if (Model.Stock > 0)
+                {
+                    <form asp-controller="Cart" asp-action="AddToCart" method="post" class="mb-4">
+                        <input type="hidden" name="productId" value="@Model.Id" />
+
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity:</label>
+                            <div class="input-group" style="width: 150px;">
+                                <button class="btn btn-outline-secondary" type="button" id="decreaseBtn">−</button>
+                                <input type="number" 
+                                       id="quantity" 
+                                       name="quantity" 
+                                       class="form-control text-center" 
+                                       value="1" 
+                                       min="1" 
+                                       max="@Model.Stock" />
+                                <button class="btn btn-outline-secondary" type="button" id="increaseBtn">+</button>
+                            </div>
+                            <small class="text-muted">Maximum @Model.Stock available</small>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+                                <i class="fas fa-shopping-cart"></i> Add to Cart
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-heart"></i> Add to Wishlist
+                            </button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="d-grid gap-2 mb-4">
+                        <button type="button" class="btn btn-secondary btn-lg" disabled>
+                            <i class="fas fa-times"></i> Out of Stock
+                        </button>
+                    </div>
+                }
+
+                <!-- Shipping Info -->
+                <div class="card bg-light border-0">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">Shipping & Delivery</h6>
+                        <div class="d-flex mb-2">
+                            <i class="fas fa-truck text-primary me-3"></i>
+                            <div>
+                                <h6 class="mb-0">Free Shipping</h6>
+                                <small class="text-muted">On orders over €50</small>
+                            </div>
+                        </div>
+                        <div class="d-flex mb-2">
+                            <i class="fas fa-shield-alt text-success me-3"></i>
+                            <div>
+                                <h6 class="mb-0">Secure Checkout</h6>
+                                <small class="text-muted">100% secure payment</small>
+                            </div>
+                        </div>
+                        <div class="d-flex">
+                            <i class="fas fa-undo text-warning me-3"></i>
+                            <div>
+                                <h6 class="mb-0">Easy Returns</h6>
+                                <small class="text-muted">30-day return policy</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="mt-3">
+            <a href="@Url.Action("Index", "Product")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Products
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('decreaseBtn').addEventListener('click', function() {
+            const input = document.getElementById('quantity');
+            const value = parseInt(input.value) || 1;
+            if (value > 1) input.value = value - 1;
+        });
+
+        document.getElementById('increaseBtn').addEventListener('click', function() {
+            const input = document.getElementById('quantity');
+            const max = parseInt(input.max) || 9999;
+            const value = parseInt(input.value) || 1;
+            if (value < max) input.value = value + 1;
+        });
+    </script>
+}

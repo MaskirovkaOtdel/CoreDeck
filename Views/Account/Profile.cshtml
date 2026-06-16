@@ -1,0 +1,105 @@
+@model ApplicationUser
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">My Profile</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">First Name</h6>
+                            <p class="h5">@Model.FirstName</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Last Name</h6>
+                            <p class="h5">@Model.LastName</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-muted">Email Address</h6>
+                        <p class="h5">@Model.Email</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-muted">Phone Number</h6>
+                        <p class="h5">@(string.IsNullOrEmpty(Model.PhoneNumber) ? "Not provided" : Model.PhoneNumber)</p>
+                    </div>
+
+                    <hr />
+
+                    <h5 class="mb-3">Shipping Address</h5>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Address</h6>
+                            <p>@(string.IsNullOrEmpty(Model.Address) ? "Not provided" : Model.Address)</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">City</h6>
+                            <p>@(string.IsNullOrEmpty(Model.City) ? "Not provided" : Model.City)</p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Postal Code</h6>
+                            <p>@(string.IsNullOrEmpty(Model.PostalCode) ? "Not provided" : Model.PostalCode)</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Country</h6>
+                            <p>@(string.IsNullOrEmpty(Model.Country) ? "Not provided" : Model.Country)</p>
+                        </div>
+                    </div>
+
+                    <a href="@Url.Action("EditProfile", "Account")" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
+                    <a href="@Url.Action("ChangePassword", "Account")" class="btn btn-secondary">
+                        <i class="fas fa-key"></i> Change Password
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Account Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <span class="badge bg-success">Verified Email</span>
+                    </div>
+                    <p class="text-muted mb-0">
+                        <small>Member since @Model.CreatedDate.ToString("MMMM dd, yyyy")</small>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <a href="@Url.Action("MyOrders", "Order")" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                        <i class="fas fa-shopping-bag"></i> My Orders
+                    </a>
+                    <a href="@Url.Action("Index", "Cart")" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                        <i class="fas fa-shopping-cart"></i> Shopping Cart
+                    </a>
+                    <a href="@Url.Action("Index", "Product")" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="fas fa-cube"></i> Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

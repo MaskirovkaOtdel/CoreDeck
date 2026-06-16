@@ -1,0 +1,83 @@
+@model List<Order>
+
+@{
+    ViewData["Title"] = "My Orders";
+}
+
+<h2 class="mb-4"><i class="fas fa-shopping-bag"></i> My Orders</h2>
+
+@if (Model.Count == 0)
+{
+    <div class="alert alert-info text-center py-5">
+        <i class="fas fa-inbox fa-3x mb-3"></i>
+        <h4>No orders yet</h4>
+        <p class="text-muted mb-3">You haven't placed any orders yet. Start shopping!</p>
+        <a href="@Url.Action("Index", "Product")" class="btn btn-primary">
+            <i class="fas fa-shopping-bag"></i> Start Shopping
+        </a>
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var order in Model)
+        {
+            <div class="col-md-6 mb-3">
+                <div class="card shadow h-100">
+                    <div class="card-header" style="@($"background-color: {GetStatusColor(order.Status)}; color: white;")">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Order #@order.Id</h6>
+                            <span class="badge bg-light text-dark">@order.Status</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-1">Order Date</h6>
+                            <p class="mb-0">@order.OrderDate.ToString("MMMM dd, yyyy HH:mm")</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-1">Shipping Address</h6>
+                            <p class="small mb-0">
+                                @order.ShippingAddress<br />
+                                @order.PostalCode @order.City, @order.Country
+                            </p>
+                        </div>
+
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-1">Items</h6>
+                            <p class="small mb-0">@order.OrderItems.Count product(s)</p>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Total Amount</h6>
+                                <h5 class="text-primary mb-0">€@order.TotalPrice.ToString("F2")</h5>
+                            </div>
+                            <a href="@Url.Action("Details", "Order", new { id = order.Id })" class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@functions {
+    private string GetStatusColor(OrderStatus status)
+    {
+        return status switch
+        {
+            OrderStatus.Pending => "#FFC107",
+            OrderStatus.Processing => "#17A2B8",
+            OrderStatus.Shipped => "#007BFF",
+            OrderStatus.Delivered => "#28A745",
+            OrderStatus.Cancelled => "#DC3545",
+            _ => "#6C757D"
+        };
+    }
+}
