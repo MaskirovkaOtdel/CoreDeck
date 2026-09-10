@@ -1,83 +1,99 @@
 @model List<Order>
 
 @{
-    ViewData["Title"] = "My Orders";
+    ViewData["Title"] = "Dispatch Log & Orders";
 }
 
-<h2 class="mb-4"><i class="fas fa-shopping-bag"></i> My Orders</h2>
-
-@if (Model.Count == 0)
-{
-    <div class="alert alert-info text-center py-5">
-        <i class="fas fa-inbox fa-3x mb-3"></i>
-        <h4>No orders yet</h4>
-        <p class="text-muted mb-3">You haven't placed any orders yet. Start shopping!</p>
-        <a href="@Url.Action("Index", "Product")" class="btn btn-primary">
-            <i class="fas fa-shopping-bag"></i> Start Shopping
+<div class="container py-4">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+        <div>
+            <h2 class="text-cyan fw-bold mb-1"><i class="fas fa-boxes me-2"></i> Deployment Log</h2>
+            <p class="text-muted small mb-0">Track historical equipment orders, dispatch status, and invoices</p>
+        </div>
+        <a href="@Url.Action("Index", "Product")" class="btn btn-outline-cyber btn-sm">
+            <i class="fas fa-microchip me-1"></i> Order More Gear
         </a>
     </div>
-}
-else
-{
-    <div class="row">
-        @foreach (var order in Model)
-        {
-            <div class="col-md-6 mb-3">
-                <div class="card shadow h-100">
-                    <div class="card-header" style="@($"background-color: {GetStatusColor(order.Status)}; color: white;")">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Order #@order.Id</h6>
-                            <span class="badge bg-light text-dark">@order.Status</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <h6 class="text-muted mb-1">Order Date</h6>
-                            <p class="mb-0">@order.OrderDate.ToString("MMMM dd, yyyy HH:mm")</p>
-                        </div>
 
-                        <div class="mb-3">
-                            <h6 class="text-muted mb-1">Shipping Address</h6>
-                            <p class="small mb-0">
-                                @order.ShippingAddress<br />
-                                @order.PostalCode @order.City, @order.Country
-                            </p>
+    @if (Model.Count == 0)
+    {
+        <div class="card shadow-lg cyber-card text-center py-5">
+            <div class="card-body">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h4 class="text-light">No historical orders logged</h4>
+                <p class="text-muted small mb-4">You have not initiated any hardware deployments yet.</p>
+                <a href="@Url.Action("Index", "Product")" class="btn btn-cyber-primary">
+                    <i class="fas fa-shopping-bag me-1"></i> Explore Hardware Arsenal
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var order in Model)
+            {
+                <div class="col-md-6 col-xl-4">
+                    <div class="card shadow-lg cyber-card h-100 d-flex flex-column">
+                        <div class="card-header cyber-card-header bg-dark d-flex justify-content-between align-items-center">
+                            <span class="text-light font-monospace fw-bold">#CD-@order.Id.ToString("D6")</span>
+                            <span class="badge @GetStatusBadge(order.Status)">@order.Status</span>
                         </div>
-
-                        <div class="mb-3">
-                            <h6 class="text-muted mb-1">Items</h6>
-                            <p class="small mb-0">@order.OrderItems.Count product(s)</p>
-                        </div>
-
-                        <hr />
-
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-1">Total Amount</h6>
-                                <h5 class="text-primary mb-0">€@order.TotalPrice.ToString("F2")</h5>
+                        <div class="card-body d-flex flex-column flex-grow-1">
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Commissioned On</small>
+                                <span class="text-light small font-monospace">@order.OrderDate.ToString("yyyy-MM-dd HH:mm")</span>
                             </div>
-                            <a href="@Url.Action("Details", "Order", new { id = order.Id })" class="btn btn-primary btn-sm">
-                                <i class="fas fa-eye"></i> View Details
-                            </a>
+
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Destination Coordinates</small>
+                                <span class="text-light small">
+                                    @order.ShippingAddress, @order.City (@order.Country)
+                                </span>
+                            </div>
+
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Hardware Payload</small>
+                                <span class="text-cyan small fw-bold">
+                                    @order.OrderItems.Count component item(s) &bull; @order.OrderItems.Sum(i => i.Quantity) units
+                                </span>
+                            </div>
+
+                            <div class="cyber-divider my-2"></div>
+
+                            <div class="d-flex justify-content-between align-items-baseline mt-auto pt-2">
+                                <div>
+                                    <small class="text-muted d-block">Requisition Total</small>
+                                    <span class="h5 text-cyan font-monospace fw-bold mb-0">€@order.TotalPrice.ToString("F2")</span>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="@Url.Action("Details", "Order", new { id = order.Id })" class="btn btn-cyber-primary">
+                                        <i class="fas fa-eye me-1"></i> Details
+                                    </a>
+                                    <a href="@Url.Action("Invoice", "Order", new { id = order.Id })" class="btn btn-outline-secondary" title="Invoice">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
-}
+            }
+        </div>
+    }
+</div>
 
 @functions {
-    private string GetStatusColor(OrderStatus status)
+    private string GetStatusBadge(OrderStatus status)
     {
         return status switch
         {
-            OrderStatus.Pending => "#FFC107",
-            OrderStatus.Processing => "#17A2B8",
-            OrderStatus.Shipped => "#007BFF",
-            OrderStatus.Delivered => "#28A745",
-            OrderStatus.Cancelled => "#DC3545",
-            _ => "#6C757D"
+            OrderStatus.Pending => "bg-warning text-dark",
+            OrderStatus.Processing => "bg-info text-dark",
+            OrderStatus.Shipped => "bg-primary text-white",
+            OrderStatus.Delivered => "bg-success text-white",
+            OrderStatus.Cancelled => "bg-danger text-white",
+            _ => "bg-secondary text-white"
         };
     }
 }

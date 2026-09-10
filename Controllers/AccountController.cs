@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using Final_Efstathiadis_Theodors.Models;
 
 namespace Final_Efstathiadis_Theodors.Controllers
@@ -25,6 +26,9 @@ namespace Final_Efstathiadis_Theodors.Controllers
         [HttpGet]
         public IActionResult Register()
         {
+            if (User.Identity?.IsAuthenticated == true)
+                return RedirectToAction("Index", "Home");
+
             return View();
         }
 
@@ -39,8 +43,8 @@ namespace Final_Efstathiadis_Theodors.Controllers
                 {
                     UserName = model.Email,
                     Email = model.Email,
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
+                    FirstName = model.FirstName.Trim(),
+                    LastName = model.LastName.Trim(),
                     CreatedDate = DateTime.UtcNow
                 };
 
@@ -49,6 +53,7 @@ namespace Final_Efstathiadis_Theodors.Controllers
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
+                    await _userManager.AddToRoleAsync(user, "Customer");
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     return RedirectToAction("Index", "Home");
                 }
@@ -66,6 +71,9 @@ namespace Final_Efstathiadis_Theodors.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
+            if (User.Identity?.IsAuthenticated == true)
+                return RedirectToAction("Index", "Home");
+
             ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
@@ -84,7 +92,11 @@ namespace Final_Efstathiadis_Theodors.Controllers
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User logged in.");
-                    return LocalRedirect(returnUrl ?? Url.Action("Index", "Home"));
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return Redirect(returnUrl);
+                    }
+                    return RedirectToAction("Index", "Home");
                 }
 
                 if (result.IsLockedOut)
@@ -101,7 +113,7 @@ namespace Final_Efstathiadis_Theodors.Controllers
             return View(model);
         }
 
-        // GET: Account/Logout
+        // POST: Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize]
@@ -118,9 +130,105 @@ namespace Final_Efstathiadis_Theodors.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
-                return NotFound();
+                return RedirectToAction(nameof(Login));
 
             return View(user);
+        }
+
+        // GET: Account/EditProfile
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> EditProfile()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return RedirectToAction(nameof(Login));
+
+            var model = new EditProfileViewModel
+            {
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber ?? "",
+                Address = user.Address,
+                City = user.City,
+                PostalCode = user.PostalCode,
+                Country = user.Country
+            };
+
+            return View(model);
+        }
+
+        // POST: Account/EditProfile
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        public async Task<IActionResult> EditProfile(EditProfileViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return RedirectToAction(nameof(Login));
+
+            user.FirstName = model.FirstName?.Trim() ?? "";
+            user.LastName = model.LastName?.Trim() ?? "";
+            user.PhoneNumber = model.PhoneNumber?.Trim();
+            user.Address = model.Address?.Trim() ?? "";
+            user.City = model.City?.Trim() ?? "";
+            user.PostalCode = model.PostalCode?.Trim() ?? "";
+            user.Country = model.Country?.Trim() ?? "";
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "Profile updated successfully.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
+        }
+
+        // GET: Account/ChangePassword
+        [HttpGet]
+        [Authorize]
+        public IActionResult ChangePassword()
+        {
+            return View();
+        }
+
+        // POST: Account/ChangePassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return RedirectToAction(nameof(Login));
+
+            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+            if (result.Succeeded)
+            {
+                await _signInManager.RefreshSignInAsync(user);
+                TempData["SuccessMessage"] = "Password changed successfully.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
         }
 
         // GET: Account/Lockout
@@ -139,17 +247,100 @@ namespace Final_Efstathiadis_Theodors.Controllers
     // View Models
     public class RegisterViewModel
     {
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(100, ErrorMessage = "First name cannot exceed 100 characters")]
+        [Display(Name = "First Name")]
         public string FirstName { get; set; } = "";
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(100, ErrorMessage = "Last name cannot exceed 100 characters")]
+        [Display(Name = "Last Name")]
         public string LastName { get; set; } = "";
+
+        [Required(ErrorMessage = "Email address is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        [Display(Name = "Email")]
         public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Password is required")]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 8)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Password")]
         public string Password { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm password")]
+        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
     }
 
     public class LoginViewModel
     {
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
         public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Password is required")]
+        [DataType(DataType.Password)]
         public string Password { get; set; } = "";
+
+        [Display(Name = "Remember me?")]
         public bool RememberMe { get; set; }
+    }
+
+    public class EditProfileViewModel
+    {
+        [Required(ErrorMessage = "First name is required")]
+        [StringLength(100, ErrorMessage = "First name cannot exceed 100 characters")]
+        [Display(Name = "First Name")]
+        public string FirstName { get; set; } = "";
+
+        [Required(ErrorMessage = "Last name is required")]
+        [StringLength(100, ErrorMessage = "Last name cannot exceed 100 characters")]
+        [Display(Name = "Last Name")]
+        public string LastName { get; set; } = "";
+
+        [Phone(ErrorMessage = "Invalid phone number")]
+        [Display(Name = "Phone Number")]
+        public string? PhoneNumber { get; set; }
+
+        [Required(ErrorMessage = "Street address is required")]
+        [StringLength(500, ErrorMessage = "Address cannot exceed 500 characters")]
+        [Display(Name = "Street Address")]
+        public string Address { get; set; } = "";
+
+        [Required(ErrorMessage = "City is required")]
+        [StringLength(100, ErrorMessage = "City cannot exceed 100 characters")]
+        [Display(Name = "City")]
+        public string City { get; set; } = "";
+
+        [Required(ErrorMessage = "Postal code is required")]
+        [StringLength(20, ErrorMessage = "Postal code cannot exceed 20 characters")]
+        [Display(Name = "Postal Code")]
+        public string PostalCode { get; set; } = "";
+
+        [Required(ErrorMessage = "Country is required")]
+        [StringLength(100, ErrorMessage = "Country cannot exceed 100 characters")]
+        [Display(Name = "Country")]
+        public string Country { get; set; } = "";
+    }
+
+    public class ChangePasswordViewModel
+    {
+        [Required(ErrorMessage = "Current password is required")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Current Password")]
+        public string CurrentPassword { get; set; } = "";
+
+        [Required(ErrorMessage = "New password is required")]
+        [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 8)]
+        [DataType(DataType.Password)]
+        [Display(Name = "New Password")]
+        public string NewPassword { get; set; } = "";
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirm New Password")]
+        [Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = "";
     }
 }

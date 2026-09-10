@@ -1,0 +1,65 @@
+@model Product
+
+@{
+    ViewData["Title"] = "Deactivate Product: " + Model.Name;
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="alert alert-warning cyber-alert border-warning" role="alert">
+                <h5 class="alert-heading fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Soft Deactivation Protocol</h5>
+                <p class="mb-0 small">
+                    This action will soft-delete the hardware component. It will be hidden from the customer-facing storefront and search queries, but all historical customer orders and invoices referencing this product will be safely preserved.
+                </p>
+            </div>
+
+            <div class="card shadow-lg cyber-card border-danger">
+                <div class="card-header cyber-card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-ban me-2"></i> Confirm Component Deactivation</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-4 align-items-center">
+                        <div class="col-md-4 text-center mb-3 mb-md-0">
+                            <img src="@Model.ImageUrl" class="img-fluid rounded cyber-thumb border" alt="@Model.Name" style="max-height: 180px; object-fit: cover;" />
+                        </div>
+                        <div class="col-md-8">
+                            <h4 class="text-light fw-bold">@Model.Name</h4>
+                            <p class="text-muted small">@Model.Description</p>
+
+                            <table class="table table-sm cyber-table">
+                                <tr>
+                                    <th class="text-muted">Category:</th>
+                                    <td class="text-light">@Model.Category?.Name</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Retail Price:</th>
+                                    <td class="text-cyan fw-bold font-monospace">€@Model.Price.ToString("F2")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Current Stock:</th>
+                                    <td class="text-light font-monospace">@Model.Stock units</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">SKU:</th>
+                                    <td class="text-muted font-monospace">CD-@Model.Id.ToString("D6")</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+                        <div class="d-flex justify-content-between align-items-center pt-2">
+                            <a href="@Url.Action("Index", "AdminProduct")" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Return to Inventory
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-1"></i> Yes, Deactivate Hardware
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

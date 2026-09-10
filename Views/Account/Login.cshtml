@@ -1,49 +1,57 @@
-@model LoginViewModel
+@model Final_Efstathiadis_Theodors.Controllers.LoginViewModel
 
 @{
-    ViewData["Title"] = "Sign In";
+    ViewData["Title"] = "Operator Sign In";
+    var returnUrl = ViewData["ReturnUrl"] as string;
 }
 
-<div class="container mt-5">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow">
-                <div class="card-body p-5">
-                    <h2 class="card-title text-center mb-4">Sign In</h2>
-
-                    <form asp-action="Login" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg cyber-card border-cyan">
+                <div class="card-header cyber-card-header text-center py-4 bg-dark">
+                    <h2 class="text-cyan fw-bold mb-1"><i class="fas fa-terminal me-2"></i> SYSTEM ACCESS</h2>
+                    <p class="text-muted small mb-0">Enter your credentials to connect to CoreDeck</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form asp-action="Login" asp-route-returnUrl="@returnUrl" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
                         <div class="mb-3">
-                            <label asp-for="Email" class="form-label">Email Address</label>
-                            <input asp-for="Email" class="form-control" type="email" />
-                            <span asp-validation-for="Email" class="text-danger"></span>
+                            <label asp-for="Email" class="form-label text-light fw-bold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text cyber-addon"><i class="fas fa-envelope text-cyan"></i></span>
+                                <input asp-for="Email" class="form-control cyber-input" type="email" placeholder="operator@coredeck.local" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="Password" class="form-label">Password</label>
-                            <input asp-for="Password" class="form-control" type="password" />
-                            <span asp-validation-for="Password" class="text-danger"></span>
+                            <label asp-for="Password" class="form-label text-light fw-bold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text cyber-addon"><i class="fas fa-key text-cyan"></i></span>
+                                <input asp-for="Password" class="form-control cyber-input" type="password" placeholder="••••••••" />
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
                         </div>
 
-                        <div class="mb-3 form-check">
+                        <div class="mb-4 form-check">
                             <input asp-for="RememberMe" type="checkbox" class="form-check-input" />
-                            <label asp-for="RememberMe" class="form-check-label">
-                                Remember me
+                            <label asp-for="RememberMe" class="form-check-label text-muted small">
+                                Keep terminal session alive (Remember me)
                             </label>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 mb-3">Sign In</button>
+                        <button type="submit" class="btn btn-cyber-primary w-100 py-2 fw-bold">
+                            <i class="fas fa-sign-in-alt me-2"></i> Authenticate & Connect
+                        </button>
                     </form>
 
-                    <hr />
+                    <div class="cyber-divider my-4"></div>
 
                     <div class="text-center">
-                        <p class="mb-2">Don't have an account? 
-                            <a asp-action="Register">Create one now</a>
-                        </p>
-                        <p class="mb-0">
-                            <a asp-action="ForgotPassword">Forgot your password?</a>
+                        <p class="text-muted small mb-0">New operator? 
+                            <a asp-action="Register" class="text-cyan text-decoration-none fw-bold">Initialize account here</a>
                         </p>
                     </div>
                 </div>
@@ -53,7 +61,5 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
 }

@@ -1,0 +1,82 @@
+@model Final_Efstathiadis_Theodors.Controllers.EditProfileViewModel
+
+@{
+    ViewData["Title"] = "Edit Profile";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg cyber-card">
+                <div class="card-header cyber-card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-user-edit me-2"></i> Edit Operator Profile</h4>
+                    <span class="badge bg-cyber-neon text-dark">Identity Sync</span>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="EditProfile" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="FirstName" class="form-label text-light fw-bold"></label>
+                                <input asp-for="FirstName" class="form-control cyber-input" placeholder="First Name" />
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="LastName" class="form-label text-light fw-bold"></label>
+                                <input asp-for="LastName" class="form-control cyber-input" placeholder="Last Name" />
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PhoneNumber" class="form-label text-light fw-bold"></label>
+                            <input asp-for="PhoneNumber" class="form-control cyber-input" placeholder="+30 690 000 0000" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                        </div>
+
+                        <hr class="border-secondary my-4" />
+                        <h5 class="text-cyan mb-3"><i class="fas fa-map-marker-alt me-2"></i> Primary Shipping Coordinates</h5>
+
+                        <div class="mb-3">
+                            <label asp-for="Address" class="form-label text-light fw-bold"></label>
+                            <input asp-for="Address" class="form-control cyber-input" placeholder="Street Address, Building, Apt" />
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-5">
+                                <label asp-for="City" class="form-label text-light fw-bold"></label>
+                                <input asp-for="City" class="form-control cyber-input" placeholder="City" />
+                                <span asp-validation-for="City" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="PostalCode" class="form-label text-light fw-bold"></label>
+                                <input asp-for="PostalCode" class="form-control cyber-input" placeholder="Postal Code" />
+                                <span asp-validation-for="PostalCode" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-4">
+                                <label asp-for="Country" class="form-label text-light fw-bold"></label>
+                                <input asp-for="Country" class="form-control cyber-input" placeholder="Country" />
+                                <span asp-validation-for="Country" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-2">
+                            <a href="@Url.Action("Profile", "Account")" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-cyber-primary">
+                                <i class="fas fa-save me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

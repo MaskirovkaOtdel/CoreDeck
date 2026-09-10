@@ -19,13 +19,22 @@ namespace Final_Efstathiadis_Theodors.Controllers
 
         // GET: Admin/Product
         [HttpGet("")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(bool showInactive = true)
         {
-            var products = await _context.Products
+            var query = _context.Products
                 .Include(p => p.Category)
+                .AsQueryable();
+
+            if (!showInactive)
+            {
+                query = query.Where(p => p.IsActive);
+            }
+
+            var products = await query
                 .OrderByDescending(p => p.CreatedDate)
                 .ToListAsync();
 
+            ViewData["ShowInactive"] = showInactive;
             return View(products);
         }
 
@@ -34,19 +43,20 @@ namespace Final_Efstathiadis_Theodors.Controllers
         public async Task<IActionResult> Create()
         {
             ViewData["Categories"] = await _context.Categories.ToListAsync();
-            return View();
+            return View(new Product { IsActive = true });
         }
 
         // POST: Admin/Product/Create
         [HttpPost("Create")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Description,Price,Stock,ImageUrl,CategoryId")] Product product)
+        public async Task<IActionResult> Create([Bind("Name,Description,Price,Stock,ImageUrl,CategoryId,IsActive")] Product product)
         {
             if (ModelState.IsValid)
             {
                 product.CreatedDate = DateTime.UtcNow;
                 _context.Add(product);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Product '{product.Name}' created successfully.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -72,7 +82,7 @@ namespace Final_Efstathiadis_Theodors.Controllers
         // POST: Admin/Product/Edit/5
         [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,Price,Stock,ImageUrl,CategoryId,CreatedDate")] Product product)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,Price,Stock,ImageUrl,CategoryId,CreatedDate,IsActive")] Product product)
         {
             if (id != product.Id)
                 return NotFound();
@@ -84,6 +94,7 @@ namespace Final_Efstathiadis_Theodors.Controllers
                     product.UpdatedDate = DateTime.UtcNow;
                     _context.Update(product);
                     await _context.SaveChangesAsync();
+                    TempData["SuccessMessage"] = $"Product '{product.Name}' updated successfully.";
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -118,14 +129,37 @@ namespace Final_Efstathiadis_Theodors.Controllers
 
         // POST: Admin/Product/Delete/5
         [HttpPost("Delete/{id}")]
+        [ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var product = await _context.Products.FindAsync(id);
             if (product != null)
             {
-                _context.Products.Remove(product);
+                // Soft delete: marks as inactive to preserve foreign key integrity with existing orders
+                product.IsActive = false;
+                product.UpdatedDate = DateTime.UtcNow;
+                _context.Products.Update(product);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Product '{product.Name}' deactivated (soft-deleted).";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: Admin/Product/Restore/5
+        [HttpPost("Restore/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Restore(int id)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product != null)
+            {
+                product.IsActive = true;
+                product.UpdatedDate = DateTime.UtcNow;
+                _context.Products.Update(product);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Product '{product.Name}' restored to active catalog.";
             }
 
             return RedirectToAction(nameof(Index));

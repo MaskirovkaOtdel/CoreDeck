@@ -1,58 +1,72 @@
-@model RegisterViewModel
+@model Final_Efstathiadis_Theodors.Controllers.RegisterViewModel
 
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Create Operator Account";
 }
 
-<div class="container mt-5">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-body p-5">
-                    <h2 class="card-title text-center mb-4">Create Account</h2>
-
+        <div class="col-md-7 col-lg-6">
+            <div class="card shadow-lg cyber-card border-cyan">
+                <div class="card-header cyber-card-header text-center py-4 bg-dark">
+                    <h2 class="text-cyan fw-bold mb-1"><i class="fas fa-user-plus me-2"></i> INITIALIZE OPERATOR</h2>
+                    <p class="text-muted small mb-0">Commission a new hardware enthusiast profile</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
                     <form asp-action="Register" method="post">
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                        <div class="mb-3">
-                            <label asp-for="FirstName" class="form-label">First Name</label>
-                            <input asp-for="FirstName" class="form-control" />
-                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="FirstName" class="form-label text-light fw-bold"></label>
+                                <input asp-for="FirstName" class="form-control cyber-input" placeholder="Alex" />
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="LastName" class="form-label text-light fw-bold"></label>
+                                <input asp-for="LastName" class="form-control cyber-input" placeholder="Mercer" />
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
+                            </div>
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="LastName" class="form-label">Last Name</label>
-                            <input asp-for="LastName" class="form-control" />
-                            <span asp-validation-for="LastName" class="text-danger"></span>
+                            <label asp-for="Email" class="form-label text-light fw-bold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text cyber-addon"><i class="fas fa-envelope text-cyan"></i></span>
+                                <input asp-for="Email" class="form-control cyber-input" type="email" placeholder="alex@coredeck.local" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="Email" class="form-label">Email Address</label>
-                            <input asp-for="Email" class="form-control" type="email" />
-                            <span asp-validation-for="Email" class="text-danger"></span>
+                            <label asp-for="Password" class="form-label text-light fw-bold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text cyber-addon"><i class="fas fa-lock text-cyan"></i></span>
+                                <input asp-for="Password" class="form-control cyber-input" type="password" placeholder="••••••••" />
+                            </div>
+                            <small class="text-muted">Password must be at least 8 characters with upper, lower, and digits.</small>
+                            <span asp-validation-for="Password" class="text-danger small d-block"></span>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="Password" class="form-label">Password</label>
-                            <input asp-for="Password" class="form-control" type="password" />
-                            <small class="form-text text-muted">
-                                Password must be at least 8 characters with uppercase and digits.
-                            </small>
-                            <span asp-validation-for="Password" class="text-danger"></span>
+                        <div class="mb-4">
+                            <label asp-for="ConfirmPassword" class="form-label text-light fw-bold"></label>
+                            <div class="input-group">
+                                <span class="input-group-text cyber-addon"><i class="fas fa-shield-alt text-cyan"></i></span>
+                                <input asp-for="ConfirmPassword" class="form-control cyber-input" type="password" placeholder="••••••••" />
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="ConfirmPassword" class="form-label">Confirm Password</label>
-                            <input asp-for="ConfirmPassword" class="form-control" type="password" />
-                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100 mb-3">Register</button>
+                        <button type="submit" class="btn btn-cyber-primary w-100 py-2 fw-bold">
+                            <i class="fas fa-user-check me-2"></i> Register Account
+                        </button>
                     </form>
 
+                    <div class="cyber-divider my-4"></div>
+
                     <div class="text-center">
-                        <p class="mb-0">Already have an account? 
-                            <a asp-action="Login">Sign in here</a>
+                        <p class="text-muted small mb-0">Already commissioned? 
+                            <a asp-action="Login" class="text-cyan text-decoration-none fw-bold">Authenticate here</a>
                         </p>
                     </div>
                 </div>
@@ -62,7 +76,5 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
 }

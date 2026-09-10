@@ -1,6 +1,38 @@
-﻿@{
-    ViewData["Title"] = "Privacy Policy";
+@{
+    ViewData["Title"] = "Security & Privacy Protocol";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container py-4">
+    <div class="card shadow-lg cyber-card">
+        <div class="card-header cyber-card-header bg-dark">
+            <h3 class="text-cyan fw-bold mb-0"><i class="fas fa-shield-halved me-2"></i> CoreDeck Security & Privacy Directive</h3>
+        </div>
+        <div class="card-body p-4 p-md-5">
+            <h5 class="text-light fw-bold mb-3">1. Operator Data Protection</h5>
+            <p class="text-muted lh-base mb-4">
+                At CoreDeck, customer security and data confidentiality are of paramount importance. Operator credentials, passwords, and identity records are cryptographically secured using ASP.NET Core Identity standards with PBKDF2 password hashing and salt generation.
+            </p>
+
+            <h5 class="text-light fw-bold mb-3">2. Transaction Integrity & Encryption</h5>
+            <p class="text-muted lh-base mb-4">
+                All financial communications, shipping coordinates, and order fulfillment requests are transferred exclusively through Transport Layer Security (TLS/HTTPS). CoreDeck does not store full raw credit card credentials on local database servers.
+            </p>
+
+            <h5 class="text-light fw-bold mb-3">3. Hardware Verification & Serial Tracking</h5>
+            <p class="text-muted lh-base mb-4">
+                Serial numbers and SKUs for deployed items (CPUs, GPUs, Motherboards, NVMe drives) are logged to ensure RMA authenticity, warranty fulfillment, and prevention of counterfeit hardware distribution.
+            </p>
+
+            <h5 class="text-light fw-bold mb-3">4. Cookies & Session Management</h5>
+            <p class="text-muted lh-base mb-4">
+                We utilize strict HTTP-only, secure authentication cookies to maintain persistent operator sessions and active cart items. No third-party behavioral trackers or external marketing cookies are deployed on the CoreDeck platform.
+            </p>
+
+            <div class="cyber-divider my-4"></div>
+
+            <div class="text-muted small">
+                Directive Last Updated: <span class="text-cyan font-monospace">@DateTime.UtcNow.ToString("yyyy-MM-dd")</span> UTC &bull; CoreDeck Security Operations
+            </div>
+        </div>
+    </div>
+</div>

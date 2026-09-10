@@ -21,8 +21,9 @@ namespace Final_Efstathiadis_Theodors.Controllers
         {
             try
             {
-                // Get featured products (latest 6)
+                // Get active featured products (latest 6)
                 var featuredProducts = await _context.Products
+                    .Where(p => p.IsActive)
                     .Include(p => p.Category)
                     .OrderByDescending(p => p.CreatedDate)
                     .Take(6)
@@ -32,8 +33,8 @@ namespace Final_Efstathiadis_Theodors.Controllers
                 var categoriesCount = await _context.Categories.CountAsync();
                 ViewData["CategoriesCount"] = categoriesCount;
 
-                // Get products count
-                var productsCount = await _context.Products.CountAsync();
+                // Get active products count
+                var productsCount = await _context.Products.Where(p => p.IsActive).CountAsync();
                 ViewData["ProductsCount"] = productsCount;
 
                 return View(featuredProducts);

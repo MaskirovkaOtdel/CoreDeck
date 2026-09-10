@@ -1,0 +1,170 @@
+@model Order
+
+@{
+    ViewData["Title"] = "Manage Order #" + Model.Id;
+}
+
+<div class="container py-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show cyber-alert mb-4" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show cyber-alert mb-4" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+        <div>
+            <h2 class="text-cyan fw-bold mb-1">
+                <i class="fas fa-tasks me-2"></i> Fulfillment Dispatch: #CD-@Model.Id.ToString("D6")
+            </h2>
+            <small class="text-muted font-monospace">Received @Model.OrderDate.ToString("yyyy-MM-dd HH:mm:ss") UTC</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Invoice", "Order", new { id = Model.Id })" target="_blank" class="btn btn-outline-cyber">
+                <i class="fas fa-file-invoice me-1"></i> Tax Invoice
+            </a>
+            <a href="@Url.Action("Index", "AdminOrder")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Orders
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <!-- Items -->
+            <div class="card shadow-lg cyber-card mb-4">
+                <div class="card-header cyber-card-header bg-dark">
+                    <h5 class="mb-0 text-light"><i class="fas fa-boxes me-2 text-cyan"></i> Requisitioned Components</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover cyber-table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th>Hardware Item</th>
+                                <th>Units</th>
+                                <th>Unit Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.OrderItems)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-light">@item.ProductSnapshot</div>
+                                        <small class="text-muted font-monospace">SKU: CD-@item.ProductId.ToString("D6")</small>
+                                    </td>
+                                    <td class="font-monospace text-light">@item.Quantity</td>
+                                    <td class="font-monospace text-muted">€@item.UnitPrice.ToString("F2")</td>
+                                    <td class="font-monospace text-cyan fw-bold">€@item.TotalPrice.ToString("F2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Customer & Shipping Coordinates -->
+            <div class="card shadow-lg cyber-card">
+                <div class="card-header cyber-card-header bg-dark">
+                    <h5 class="mb-0 text-light"><i class="fas fa-shipping-fast me-2 text-cyan"></i> Destination & Requisitioner</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h6 class="text-cyan small text-uppercase fw-bold">Operator Profile:</h6>
+                            <p class="text-light fw-bold mb-1">@(Model.User?.GetFullName() ?? "Unknown User")</p>
+                            <p class="text-muted small font-monospace mb-1">Email: @(Model.User?.Email ?? "N/A")</p>
+                            <p class="text-muted small mb-0">Phone: @(Model.User?.PhoneNumber ?? "Not provided")</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-cyan small text-uppercase fw-bold">Shipping Coordinates:</h6>
+                            <p class="text-light mb-1">@Model.ShippingAddress</p>
+                            <p class="text-muted small mb-1">@Model.PostalCode @Model.City</p>
+                            <p class="text-muted small mb-0">@Model.Country</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Update Status Card -->
+            <div class="card shadow-lg cyber-card mb-4 border-warning">
+                <div class="card-header cyber-card-header bg-dark">
+                    <h5 class="mb-0 text-warning"><i class="fas fa-sliders-h me-2"></i> Update Order Status</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Current Status:</small>
+                        <span class="badge @GetStatusBadge(Model.Status) fs-6">@Model.Status</span>
+                    </div>
+
+                    <form asp-action="UpdateStatus" asp-route-id="@Model.Id" method="post">
+                        <div class="mb-3">
+                            <label class="form-label text-light small fw-bold">New Status:</label>
+                            <select name="status" class="form-select cyber-input mb-3">
+                                @foreach (OrderStatus s in Enum.GetValues(typeof(OrderStatus)))
+                                {
+                                    <option value="@s" selected="@(Model.Status == s)">@s</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-cyber-primary w-100 py-2">
+                            <i class="fas fa-save me-1"></i> Update Status & Timestamp
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="card shadow-lg cyber-card">
+                <div class="card-header cyber-card-header bg-dark">
+                    <h5 class="mb-0 text-cyan"><i class="fas fa-receipt me-2"></i> Ledger Summary</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total Units:</span>
+                        <span class="text-light font-monospace">@Model.OrderItems.Sum(i => i.Quantity)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total Paid:</span>
+                        <span class="text-cyan fw-bold font-monospace">€@Model.TotalPrice.ToString("F2")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Shipped Timestamp:</span>
+                        <span class="text-muted small font-monospace">@(Model.ShippedDate?.ToString("yyyy-MM-dd HH:mm") ?? "Pending")</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Delivered Timestamp:</span>
+                        <span class="text-muted small font-monospace">@(Model.DeliveredDate?.ToString("yyyy-MM-dd HH:mm") ?? "Pending")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string GetStatusBadge(OrderStatus status)
+    {
+        return status switch
+        {
+            OrderStatus.Pending => "bg-warning text-dark",
+            OrderStatus.Processing => "bg-info text-dark",
+            OrderStatus.Shipped => "bg-primary text-white",
+            OrderStatus.Delivered => "bg-success text-white",
+            OrderStatus.Cancelled => "bg-danger text-white",
+            _ => "bg-secondary text-white"
+        };
+    }
+}

@@ -23,6 +23,8 @@ namespace Final_Efstathiadis_Theodors.Models
         [Range(0, 10000, ErrorMessage = "Stock must be between 0 and 10,000")]
         public int Stock { get; set; } = 0;
 
+        public bool IsActive { get; set; } = true;
+
         // Foreign key
         [Required(ErrorMessage = "Category is required")]
         public int CategoryId { get; set; }

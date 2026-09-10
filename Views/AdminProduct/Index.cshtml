@@ -1,0 +1,153 @@
+@model List<Product>
+
+@{
+    ViewData["Title"] = "Admin - Product Catalog Management";
+    var showInactive = (bool?)ViewData["ShowInactive"] ?? true;
+}
+
+<div class="container-fluid py-3">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show cyber-alert mb-4" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h2 class="text-cyan fw-bold mb-1">
+                <i class="fas fa-microchip me-2"></i> Hardware Inventory Control
+            </h2>
+            <p class="text-muted small mb-0">Manage technical specs, stock quantities, and catalog visibility</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Index", "AdminOrder")" class="btn btn-outline-warning">
+                <i class="fas fa-clipboard-list me-1"></i> Orders Dispatch
+            </a>
+            <a href="@Url.Action("Create", "AdminProduct")" class="btn btn-cyber-primary">
+                <i class="fas fa-plus-circle me-1"></i> Add Hardware Item
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-lg cyber-card">
+        <div class="card-header cyber-card-header bg-dark d-flex justify-content-between align-items-center">
+            <span class="text-light fw-bold"><i class="fas fa-list me-2"></i> Catalog Items (@Model.Count total)</span>
+            <div>
+                <a href="@Url.Action("Index", "AdminProduct", new { showInactive = !showInactive })" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-filter me-1"></i> @(showInactive ? "Hide Inactive" : "Show All (Including Deactivated)")
+                </a>
+            </div>
+        </div>
+
+        @if (Model.Count == 0)
+        {
+            <div class="card-body text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-light">No hardware items found</h5>
+                <p class="text-muted small">Initialize catalog by commissioning new hardware products.</p>
+                <a href="@Url.Action("Create", "AdminProduct")" class="btn btn-cyber-primary btn-sm">
+                    <i class="fas fa-plus"></i> Add First Item
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover cyber-table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">Media</th>
+                            <th>Product / SKU</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in Model)
+                        {
+                            <tr class="@(!product.IsActive ? "opacity-50" : "")">
+                                <td>
+                                    <img src="@product.ImageUrl" 
+                                         alt="@product.Name" 
+                                         class="rounded cyber-thumb"
+                                         style="width: 50px; height: 50px; object-fit: cover;" />
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-light">@product.Name</div>
+                                    <small class="text-muted font-monospace">SKU: CD-@product.Id.ToString("D6")</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">@product.Category?.Name</span>
+                                </td>
+                                <td>
+                                    <span class="text-cyan fw-bold font-monospace">€@product.Price.ToString("F2")</span>
+                                </td>
+                                <td>
+                                    @if (product.Stock > 10)
+                                    {
+                                        <span class="badge bg-success font-monospace">@product.Stock in stock</span>
+                                    }
+                                    else if (product.Stock > 0)
+                                    {
+                                        <span class="badge bg-warning font-monospace text-dark">@product.Stock left</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger font-monospace">Depleted</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (product.IsActive)
+                                    {
+                                        <span class="badge bg-success bg-opacity-25 text-success border border-success">
+                                            <i class="fas fa-check-circle me-1"></i> Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger">
+                                            <i class="fas fa-ban me-1"></i> Deactivated
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("Details", "Product", new { id = product.Id })" 
+                                           target="_blank"
+                                           class="btn btn-outline-info" title="Preview Public Page">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", "AdminProduct", new { id = product.Id })" 
+                                           class="btn btn-outline-primary" title="Edit Hardware Specs">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        @if (product.IsActive)
+                                        {
+                                            <a href="@Url.Action("Delete", "AdminProduct", new { id = product.Id })" 
+                                               class="btn btn-outline-danger" title="Deactivate (Soft-Delete)">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <form asp-action="Restore" asp-route-id="@product.Id" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-outline-success" title="Restore to Catalog">
+                                                    <i class="fas fa-trash-restore"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

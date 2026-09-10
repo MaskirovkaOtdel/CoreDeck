@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="row justify-content-center py-5">
+    <div class="col-md-7 col-lg-6">
+        <div class="card shadow-lg border-danger cyber-card text-center p-4">
+            <div class="card-body">
+                <div class="mb-4">
+                    <span class="cyber-icon-badge text-danger">
+                        <i class="fas fa-shield-halved fa-4x text-danger animate-pulse"></i>
+                    </span>
+                </div>
+                <h1 class="h2 text-danger fw-bold mb-3">403 - ACCESS DENIED</h1>
+                <p class="text-muted lead mb-4">
+                    Security protocol active. You do not possess the clearance level required to access this resource or administrative terminal.
+                </p>
+                <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-cyber-primary">
+                        <i class="fas fa-home me-2"></i> Return to Terminal
+                    </a>
+                    <a href="@Url.Action("Login", "Account")" class="btn btn-outline-secondary">
+                        <i class="fas fa-sign-in-alt me-2"></i> Switch Identity
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

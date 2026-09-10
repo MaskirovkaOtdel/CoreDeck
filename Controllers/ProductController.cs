@@ -16,10 +16,18 @@ namespace Final_Efstathiadis_Theodors.Controllers
         }
 
         // GET: Product/Index
-        public async Task<IActionResult> Index(int categoryId = 0, int page = 1, string search = "")
+        public async Task<IActionResult> Index(
+            int categoryId = 0,
+            int page = 1,
+            string search = "",
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            bool inStockOnly = false,
+            string sortOrder = "newest")
         {
             var query = _context.Products
                 .Include(p => p.Category)
+                .Where(p => p.IsActive)
                 .AsQueryable();
 
             // Filter by category
@@ -28,24 +36,58 @@ namespace Final_Efstathiadis_Theodors.Controllers
                 query = query.Where(p => p.CategoryId == categoryId);
             }
 
-            // Search filter
-            if (!string.IsNullOrEmpty(search))
+            // Filter by search keyword
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(p => p.Name.Contains(search) || p.Description.Contains(search));
+                var term = search.Trim();
+                query = query.Where(p => p.Name.Contains(term) || p.Description.Contains(term));
             }
+
+            // Filter by price bounds
+            if (minPrice.HasValue && minPrice.Value > 0)
+            {
+                query = query.Where(p => p.Price >= minPrice.Value);
+            }
+
+            if (maxPrice.HasValue && maxPrice.Value > 0)
+            {
+                query = query.Where(p => p.Price <= maxPrice.Value);
+            }
+
+            // Filter by stock availability
+            if (inStockOnly)
+            {
+                query = query.Where(p => p.Stock > 0);
+            }
+
+            // Sorting logic
+            query = sortOrder?.ToLowerInvariant() switch
+            {
+                "price_asc" or "priceasc" => query.OrderBy(p => p.Price),
+                "price_desc" or "pricedesc" => query.OrderByDescending(p => p.Price),
+                "name" => query.OrderBy(p => p.Name),
+                _ => query.OrderByDescending(p => p.CreatedDate)
+            };
 
             // Pagination
             var totalCount = await query.CountAsync();
+            var totalPages = Math.Max(1, (int)Math.Ceiling(totalCount / (double)PageSize));
+            page = Math.Clamp(page, 1, totalPages);
+
             var products = await query
-                .OrderByDescending(p => p.CreatedDate)
                 .Skip((page - 1) * PageSize)
                 .Take(PageSize)
                 .ToListAsync();
 
             ViewData["CategoryId"] = categoryId;
             ViewData["SearchTerm"] = search;
+            ViewData["MinPrice"] = minPrice;
+            ViewData["MaxPrice"] = maxPrice;
+            ViewData["InStockOnly"] = inStockOnly;
+            ViewData["SortOrder"] = sortOrder ?? "newest";
             ViewData["CurrentPage"] = page;
-            ViewData["TotalPages"] = (int)Math.Ceiling(totalCount / (double)PageSize);
+            ViewData["TotalPages"] = totalPages;
+            ViewData["TotalCount"] = totalCount;
             ViewData["Categories"] = await _context.Categories.ToListAsync();
 
             return View(products);
@@ -59,7 +101,7 @@ namespace Final_Efstathiadis_Theodors.Controllers
 
             var product = await _context.Products
                 .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.Id == id);
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
 
             if (product == null)
                 return NotFound();
@@ -69,21 +111,9 @@ namespace Final_Efstathiadis_Theodors.Controllers
         }
 
         // GET: Product/Search
-        public async Task<IActionResult> Search(string searchTerm)
+        public IActionResult Search(string searchTerm)
         {
-            if (string.IsNullOrEmpty(searchTerm))
-                return RedirectToAction(nameof(Index));
-
-            var products = await _context.Products
-                .Include(p => p.Category)
-                .Where(p => p.Name.Contains(searchTerm) || p.Description.Contains(searchTerm))
-                .Take(50)
-                .ToListAsync();
-
-            ViewData["SearchTerm"] = searchTerm;
-            ViewData["Categories"] = await _context.Categories.ToListAsync();
-
-            return View("Index", products);
+            return RedirectToAction(nameof(Index), new { search = searchTerm });
         }
     }
 }

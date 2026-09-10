@@ -1,214 +1,206 @@
 @model Cart
 
 @{
-    ViewData["Title"] = "Checkout";
+    ViewData["Title"] = "Secure Checkout";
+    var user = ViewData["User"] as ApplicationUser;
+    decimal subtotal = Model.GetTotalPrice();
+    decimal shipping = subtotal >= 100 ? 0 : 9.99m;
+    decimal total = subtotal + shipping;
 }
 
-<h2 class="mb-4"><i class="fas fa-cash-register"></i> Checkout</h2>
-
-@if (Model?.CartItems.Count == 0)
-{
-    <div class="alert alert-warning">
-        <p>Your cart is empty. <a href="@Url.Action("Index", "Product")">Continue shopping</a></p>
+<div class="container py-4">
+    <div class="mb-4">
+        <h2 class="text-cyan fw-bold"><i class="fas fa-lock me-2"></i> Encrypted Checkout Protocol</h2>
+        <p class="text-muted small">Verify shipping coordinates and confirm your enthusiast gear requisition</p>
     </div>
-}
-else
-{
-    <form asp-controller="Cart" asp-action="PlaceOrder" method="post">
-        <div class="row g-4">
-            <!-- Checkout Form -->
-            <div class="col-lg-8">
-                <!-- Shipping Information -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Shipping Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="shippingAddress" class="form-label">Street Address *</label>
-                            <input type="text" class="form-control" id="shippingAddress" name="shippingAddress" required />
-                        </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="city" class="form-label">City *</label>
-                                <input type="text" class="form-control" id="city" name="city" required />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="postalCode" class="form-label">Postal Code *</label>
-                                <input type="text" class="form-control" id="postalCode" name="postalCode" required />
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="country" class="form-label">Country *</label>
-                            <select class="form-select" id="country" name="country" required>
-                                <option value="">Select a country</option>
-                                <option value="Greece">Greece</option>
-                                <option value="Germany">Germany</option>
-                                <option value="France">France</option>
-                                <option value="Spain">Spain</option>
-                                <option value="Italy">Italy</option>
-                                <option value="United Kingdom">United Kingdom</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Order Items Review -->
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="fas fa-list"></i> Order Review</h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in Model.CartItems)
-                                {
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <img src="@item.Product?.ImageUrl" 
-                                                     alt="@item.Product?.Name" 
-                                                     style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" />
-                                                <span>@item.Product?.Name</span>
-                                            </div>
-                                        </td>
-                                        <td>@item.Quantity</td>
-                                        <td>€@item.UnitPrice.ToString("F2")</td>
-                                        <td><strong>€@item.GetTotalPrice().ToString("F2")</strong></td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Payment Method -->
-                <div class="card shadow">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> Payment Method</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-info mb-3">
-                            <i class="fas fa-info-circle"></i>
-                            Secure payment processing. Your data is encrypted and protected.
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="credit-card" value="credit-card" checked />
-                                <label class="form-check-label" for="credit-card">
-                                    <i class="fas fa-credit-card"></i> Credit/Debit Card
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="paypal" value="paypal" />
-                                <label class="form-check-label" for="paypal">
-                                    <i class="fab fa-cc-paypal"></i> PayPal
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="alert alert-light">
-                            <p class="text-muted mb-0">
-                                <small>
-                                    <i class="fas fa-check-circle text-success"></i> 
-                                    Payment gateway will be integrated in the next phase. 
-                                    For now, this is a demo checkout.
-                                </small>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Order Summary Sidebar -->
-            <div class="col-lg-4">
-                <div class="card shadow sticky-top" style="top: 80px;">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">Order Summary</h5>
-                    </div>
-                    <div class="card-body">
-                        @{
-                            decimal subtotal = Model.GetTotalPrice();
-                            decimal shipping = subtotal >= 50 ? 0 : 5;
-                            decimal tax = subtotal * 0.19m;
-                            decimal total = subtotal + shipping + tax;
-                        }
-
-                        <div class="row mb-2">
-                            <div class="col-6">Subtotal:</div>
-                            <div class="col-6 text-end">€@subtotal.ToString("F2")</div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-6">Shipping:</div>
-                            <div class="col-6 text-end">
-                                @if (shipping == 0)
-                                {
-                                    <span class="badge bg-success">FREE</span>
-                                }
-                                else
-                                {
-                                    <span>€@shipping.ToString("F2")</span>
-                                }
-                            </div>
-                        </div>
-
-                        <div class="row mb-2">
-                            <div class="col-6">Tax (19%):</div>
-                            <div class="col-6 text-end">€@tax.ToString("F2")</div>
-                        </div>
-
-                        <hr />
-
-                        <div class="row mb-4">
-                            <div class="col-6"><strong>Total Amount:</strong></div>
-                            <div class="col-6 text-end">
-                                <h5 class="text-primary mb-0">€@total.ToString("F2")</h5>
-                            </div>
-                        </div>
-
-                        <!-- T&C -->
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="terms" required />
-                            <label class="form-check-label" for="terms">
-                                <small>I agree to the Terms & Conditions and Privacy Policy</small>
-                            </label>
-                        </div>
-
-                        <button type="submit" class="btn btn-success btn-lg w-100 mb-2">
-                            <i class="fas fa-check-circle"></i> Complete Order
-                        </button>
-
-                        <a href="@Url.Action("Index", "Cart")" class="btn btn-outline-secondary w-100">
-                            <i class="fas fa-arrow-left"></i> Back to Cart
-                        </a>
-
-                        <!-- Security Badges -->
-                        <div class="mt-4 pt-3 border-top">
-                            <div class="d-flex justify-content-center gap-2">
-                                <small class="text-muted text-center">
-                                    <i class="fas fa-lock text-success"></i> Secure Checkout
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    @if (Model?.CartItems == null || Model.CartItems.Count == 0)
+    {
+        <div class="alert alert-warning cyber-alert">
+            Your cart is empty. <a href="@Url.Action("Index", "Product")" class="text-cyan">Browse the arsenal</a>
         </div>
-    </form>
-}
+    }
+    else
+    {
+        <form asp-controller="Cart" asp-action="PlaceOrder" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <!-- Shipping Information (Pre-filled from user profile) -->
+                    <div class="card shadow-lg cyber-card mb-4">
+                        <div class="card-header cyber-card-header bg-dark d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 text-cyan"><i class="fas fa-map-marker-alt me-2"></i> Shipping Destination Coordinates</h5>
+                            @if (user != null && !string.IsNullOrEmpty(user.Address))
+                            {
+                                <span class="badge bg-success bg-opacity-25 text-success border border-success small">
+                                    <i class="fas fa-check me-1"></i> Pre-filled from Profile
+                                </span>
+                            }
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="mb-3">
+                                <label for="shippingAddress" class="form-label text-light fw-bold">Street Address *</label>
+                                <input type="text" class="form-control cyber-input" id="shippingAddress" name="shippingAddress" 
+                                       value="@(user?.Address ?? "")" placeholder="123 Cyber St, Suite 4B" required />
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="city" class="form-label text-light fw-bold">City *</label>
+                                    <input type="text" class="form-control cyber-input" id="city" name="city" 
+                                           value="@(user?.City ?? "")" placeholder="Athens" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="postalCode" class="form-label text-light fw-bold">Postal Code *</label>
+                                    <input type="text" class="form-control cyber-input" id="postalCode" name="postalCode" 
+                                           value="@(user?.PostalCode ?? "")" placeholder="10431" required />
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <label for="country" class="form-label text-light fw-bold">Country *</label>
+                                <select class="form-select cyber-input" id="country" name="country" required>
+                                    <option value="">-- Select Country --</option>
+                                    <option value="Greece" selected="@(user?.Country == "Greece")">Greece</option>
+                                    <option value="Germany" selected="@(user?.Country == "Germany")">Germany</option>
+                                    <option value="France" selected="@(user?.Country == "France")">France</option>
+                                    <option value="Spain" selected="@(user?.Country == "Spain")">Spain</option>
+                                    <option value="Italy" selected="@(user?.Country == "Italy")">Italy</option>
+                                    <option value="United Kingdom" selected="@(user?.Country == "United Kingdom")">United Kingdom</option>
+                                    <option value="United States" selected="@(user?.Country == "United States")">United States</option>
+                                    <option value="Other" selected="@(user?.Country != null && user.Country != "Greece" && user.Country != "Germany" && user.Country != "France" && user.Country != "Spain" && user.Country != "Italy" && user.Country != "United Kingdom" && user.Country != "United States")">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Review -->
+                    <div class="card shadow-lg cyber-card mb-4">
+                        <div class="card-header cyber-card-header bg-dark">
+                            <h5 class="mb-0 text-light"><i class="fas fa-list me-2"></i> Hardware Requisition Review</h5>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover cyber-table mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Qty</th>
+                                        <th>Unit Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.CartItems)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <img src="@item.Product?.ImageUrl" 
+                                                         alt="@item.Product?.Name" 
+                                                         class="rounded cyber-thumb"
+                                                         style="width: 45px; height: 45px; object-fit: cover;" />
+                                                    <div>
+                                                        <span class="text-light fw-bold d-block">@item.Product?.Name</span>
+                                                        <small class="text-muted font-monospace">SKU: CD-@item.ProductId.ToString("D6")</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="font-monospace text-light">@item.Quantity</td>
+                                            <td class="font-monospace text-muted">€@item.UnitPrice.ToString("F2")</td>
+                                            <td class="font-monospace text-cyan fw-bold">€@item.GetTotalPrice().ToString("F2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="card shadow-lg cyber-card">
+                        <div class="card-header cyber-card-header bg-dark">
+                            <h5 class="mb-0 text-cyan"><i class="fas fa-credit-card me-2"></i> Payment Gateway Selection</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="form-check mb-3 p-3 rounded border border-secondary cyber-option">
+                                <input class="form-check-input" type="radio" name="paymentMethod" id="credit-card" value="credit-card" checked />
+                                <label class="form-check-label text-light fw-bold ms-2" for="credit-card">
+                                    <i class="fas fa-credit-card text-cyan me-1"></i> Credit / Debit Card (Stripe Gateway Demo)
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3 p-3 rounded border border-secondary cyber-option">
+                                <input class="form-check-input" type="radio" name="paymentMethod" id="paypal" value="paypal" />
+                                <label class="form-check-label text-light fw-bold ms-2" for="paypal">
+                                    <i class="fab fa-paypal text-primary me-1"></i> PayPal Express Checkout
+                                </label>
+                            </div>
+
+                            <div class="alert alert-dark border-secondary mb-0">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle text-cyan me-1"></i> 
+                                    Alpha release sandbox mode enabled. Placing order will generate a confirmed receipt and dispatch record.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary Sidebar -->
+                <div class="col-lg-4">
+                    <div class="card shadow-lg cyber-card sticky-top" style="top: 85px;">
+                        <div class="card-header cyber-card-header bg-dark">
+                            <h5 class="mb-0 text-cyan"><i class="fas fa-calculator me-2"></i> Total Calculation</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Hardware Subtotal:</span>
+                                <span class="text-light font-monospace">€@subtotal.ToString("F2")</span>
+                            </div>
+
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Express Courier:</span>
+                                <span class="font-monospace">
+                                    @if (shipping == 0)
+                                    {
+                                        <span class="badge bg-success bg-opacity-25 text-success border border-success">FREE</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-light">€@shipping.ToString("F2")</span>
+                                    }
+                                </span>
+                            </div>
+
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted">Estimated VAT (19% incl.):</span>
+                                <span class="text-muted font-monospace">€@((subtotal * 0.19m).ToString("F2"))</span>
+                            </div>
+
+                            <div class="cyber-divider mb-3"></div>
+
+                            <div class="d-flex justify-content-between align-items-baseline mb-4">
+                                <span class="h6 text-light fw-bold mb-0">Final Requisition:</span>
+                                <span class="h4 text-cyan fw-bold font-monospace mb-0">€@total.ToString("F2")</span>
+                            </div>
+
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="terms" required checked />
+                                <label class="form-check-label text-muted small ms-1" for="terms">
+                                    I accept the CoreDeck Alpha Terms of Purchase and Dispatch Protocol.
+                                </label>
+                            </div>
+
+                            <button type="submit" class="btn btn-cyber-primary btn-lg w-100 py-3 fw-bold mb-2">
+                                <i class="fas fa-check-circle me-2"></i> Authorize & Place Order
+                            </button>
+
+                            <a href="@Url.Action("Index", "Cart")" class="btn btn-outline-secondary w-100">
+                                <i class="fas fa-arrow-left me-1"></i> Return to Cart
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    }
+</div>

@@ -1,0 +1,154 @@
+@model Order
+
+@{
+    ViewData["Title"] = "Tax Invoice #" + Model.Id;
+    decimal subtotal = Model.OrderItems.Sum(oi => oi.TotalPrice);
+    decimal shipping = subtotal >= 100 ? 0 : 9.99m;
+    decimal tax = subtotal * 0.19m;
+}
+
+<div class="container py-4 invoice-container">
+    <!-- Non-printable top action bar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <a href="@Url.Action("Details", "Order", new { id = Model.Id })" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to Order Details
+        </a>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-cyber-primary">
+                <i class="fas fa-print me-2"></i> Print / Save as PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Printable Invoice Document Sheet -->
+    <div class="card shadow-lg cyber-card invoice-sheet p-4 p-md-5">
+        <!-- Sheet Header -->
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-start border-bottom border-secondary pb-4 mb-4">
+            <div>
+                <div class="h2 text-cyan fw-bold font-monospace mb-1">
+                    <i class="fas fa-microchip me-2"></i> COREDECK
+                </div>
+                <p class="text-muted small mb-0">High-Performance Computing & Gaming Gear</p>
+                <small class="text-muted font-monospace">CoreDeck Systems Ltd. &bull; Cyber Deck 1, Athens, Greece</small>
+            </div>
+            <div class="text-sm-end mt-3 mt-sm-0">
+                <span class="badge bg-dark border border-cyan text-cyan fs-6 font-monospace mb-2 d-inline-block">
+                    TAX INVOICE
+                </span>
+                <div class="text-light fw-bold font-monospace">INVOICE: #CD-INV-@Model.Id.ToString("D6")</div>
+                <small class="text-muted">Order Date: @Model.OrderDate.ToString("yyyy-MM-dd HH:mm") UTC</small>
+            </div>
+        </div>
+
+        <!-- Bill To & Order Meta -->
+        <div class="row g-4 mb-4">
+            <div class="col-sm-6">
+                <h6 class="text-cyan text-uppercase fw-bold small mb-2">Requisitioner / Bill To:</h6>
+                <div class="text-light fw-bold">@(Model.User?.GetFullName() ?? "Valued Customer")</div>
+                <div class="text-muted font-monospace small">@Model.User?.Email</div>
+                <div class="text-muted small mt-2">
+                    <strong>Shipping Coordinates:</strong><br />
+                    @Model.ShippingAddress<br />
+                    @Model.PostalCode @Model.City, @Model.Country
+                </div>
+            </div>
+            <div class="col-sm-6 text-sm-end">
+                <h6 class="text-cyan text-uppercase fw-bold small mb-2">Dispatch Information:</h6>
+                <div class="text-muted small"><strong>Status:</strong> <span class="badge bg-secondary">@Model.Status</span></div>
+                <div class="text-muted small"><strong>Shipped:</strong> @(Model.ShippedDate?.ToString("MMM dd, yyyy") ?? "Processing")</div>
+                <div class="text-muted small"><strong>Delivered:</strong> @(Model.DeliveredDate?.ToString("MMM dd, yyyy") ?? "In Transit")</div>
+                <div class="text-muted small"><strong>Payment Protocol:</strong> Verified Electronic Authorization</div>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="table-responsive mb-4">
+            <table class="table cyber-table table-bordered align-middle">
+                <thead>
+                    <tr class="table-dark">
+                        <th>#</th>
+                        <th>Hardware Component</th>
+                        <th>SKU</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-end">Unit Price</th>
+                        <th class="text-end">Line Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int idx = 1; }
+                    @foreach (var item in Model.OrderItems)
+                    {
+                        <tr>
+                            <td class="font-monospace text-muted">@idx</td>
+                            <td>
+                                <strong class="text-light">@item.ProductSnapshot</strong>
+                            </td>
+                            <td class="font-monospace text-cyan small">CD-@item.ProductId.ToString("D6")</td>
+                            <td class="text-center font-monospace text-light">@item.Quantity</td>
+                            <td class="text-end font-monospace text-light">€@item.UnitPrice.ToString("F2")</td>
+                            <td class="text-end font-monospace text-cyan fw-bold">€@item.TotalPrice.ToString("F2")</td>
+                        </tr>
+                        idx++;
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totals Calculation -->
+        <div class="row justify-content-end mb-4">
+            <div class="col-md-5 col-lg-4">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Subtotal:</span>
+                    <span class="text-light font-monospace">€@subtotal.ToString("F2")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">VAT (19% Included):</span>
+                    <span class="text-muted font-monospace">€@tax.ToString("F2")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted small">Courier Dispatch:</span>
+                    <span class="text-light font-monospace">@(shipping == 0 ? "FREE" : "€" + shipping.ToString("F2"))</span>
+                </div>
+                <div class="cyber-divider mb-3"></div>
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <span class="h6 text-light fw-bold mb-0">Total Paid:</span>
+                    <span class="h4 text-cyan fw-bold font-monospace mb-0">€@Model.TotalPrice.ToString("F2")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Footer -->
+        <div class="border-top border-secondary pt-4 mt-auto text-center text-muted small">
+            <p class="mb-1">Thank you for requisitioning enthusiast hardware with CoreDeck.</p>
+            <p class="mb-0">For warranty claims, technical inquiries, or RMA support: <span class="text-cyan font-monospace">support@coredeck.local</span></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        .no-print, header, footer, .navbar {
+            display: none !important;
+        }
+        .invoice-sheet {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #ccc !important;
+            box-shadow: none !important;
+        }
+        .invoice-sheet * {
+            color: #000000 !important;
+        }
+        .table-dark {
+            background-color: #eee !important;
+            color: #000 !important;
+        }
+        .cyber-table {
+            color: #000000 !important;
+        }
+    }
+</style>

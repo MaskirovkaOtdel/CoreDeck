@@ -41,6 +41,7 @@ namespace Final_Efstathiadis_Theodors.Data
                 entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.ImageUrl).HasMaxLength(500);
                 entity.Property(e => e.Stock).HasDefaultValue(0);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
                 entity.HasOne(e => e.Category).WithMany(c => c.Products).HasForeignKey(e => e.CategoryId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasMany(e => e.OrderItems).WithOne(oi => oi.Product).HasForeignKey(oi => oi.ProductId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasMany(e => e.CartItems).WithOne(ci => ci.Product).HasForeignKey(ci => ci.ProductId).OnDelete(DeleteBehavior.Cascade);

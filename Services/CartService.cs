@@ -36,6 +36,7 @@ namespace Final_Efstathiadis_Theodors.Services
                 cart = new Cart { UserId = userId, CreatedDate = DateTime.UtcNow };
                 _context.Carts.Add(cart);
                 await _context.SaveChangesAsync();
+                cart.CartItems = new List<CartItem>();
             }
 
             return cart;
@@ -44,7 +45,7 @@ namespace Final_Efstathiadis_Theodors.Services
         public async Task<bool> AddToCartAsync(string userId, int productId, int quantity = 1)
         {
             var product = await _context.Products.FindAsync(productId);
-            if (product == null || quantity <= 0)
+            if (product == null || !product.IsActive || quantity <= 0 || product.Stock <= 0)
                 return false;
 
             var cart = await GetOrCreateCartAsync(userId);
@@ -52,15 +53,21 @@ namespace Final_Efstathiadis_Theodors.Services
             var existingItem = cart.CartItems.FirstOrDefault(ci => ci.ProductId == productId);
             if (existingItem != null)
             {
-                existingItem.Quantity += quantity;
+                var newQuantity = existingItem.Quantity + quantity;
+                if (newQuantity > product.Stock)
+                    newQuantity = product.Stock;
+
+                existingItem.Quantity = newQuantity;
+                existingItem.UnitPrice = product.Price;
             }
             else
             {
+                var addQuantity = Math.Min(quantity, product.Stock);
                 var cartItem = new CartItem
                 {
                     CartId = cart.Id,
                     ProductId = productId,
-                    Quantity = quantity,
+                    Quantity = addQuantity,
                     UnitPrice = product.Price,
                     AddedDate = DateTime.UtcNow
                 };
@@ -92,7 +99,10 @@ namespace Final_Efstathiadis_Theodors.Services
 
         public async Task<bool> UpdateQuantityAsync(string userId, int cartItemId, int quantity)
         {
-            var cartItem = await _context.CartItems.FindAsync(cartItemId);
+            var cartItem = await _context.CartItems
+                .Include(ci => ci.Product)
+                .FirstOrDefaultAsync(ci => ci.Id == cartItemId);
+
             if (cartItem == null)
                 return false;
 
@@ -106,7 +116,12 @@ namespace Final_Efstathiadis_Theodors.Services
             }
             else
             {
-                cartItem.Quantity = quantity;
+                var maxStock = cartItem.Product?.Stock ?? quantity;
+                cartItem.Quantity = Math.Min(quantity, maxStock);
+                if (cartItem.Product != null)
+                {
+                    cartItem.UnitPrice = cartItem.Product.Price;
+                }
             }
 
             if (cart != null)
@@ -124,8 +139,14 @@ namespace Final_Efstathiadis_Theodors.Services
 
         public async Task<int> GetCartItemCountAsync(string userId)
         {
-            var cart = await GetOrCreateCartAsync(userId);
-            return cart.GetTotalItems();
+            if (string.IsNullOrEmpty(userId))
+                return 0;
+
+            var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
+
+            return cart?.GetTotalItems() ?? 0;
         }
 
         public async Task ClearCartAsync(string userId)

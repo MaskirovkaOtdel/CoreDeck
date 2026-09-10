@@ -8,7 +8,9 @@ namespace Final_Efstathiadis_Theodors.Services
     {
         Task<Order?> CreateOrderAsync(string userId, OrderCreationDto orderDto);
         Task<Order?> GetOrderAsync(int orderId, string userId);
+        Task<Order?> GetOrderByIdAsync(int orderId);
         Task<List<Order>> GetUserOrdersAsync(string userId);
+        Task<List<Order>> GetAllOrdersAsync(OrderStatus? status = null, string? search = null);
         Task<bool> CancelOrderAsync(int orderId, string userId);
         Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus status);
         Task<decimal> CalculateOrderTotalAsync(List<OrderItemDto> items);
@@ -64,27 +66,31 @@ namespace Final_Efstathiadis_Theodors.Services
             foreach (var itemDto in orderDto.Items)
             {
                 var product = await _context.Products.FindAsync(itemDto.ProductId);
-                if (product == null)
+                if (product == null || !product.IsActive || product.Stock < itemDto.Quantity || itemDto.Quantity <= 0)
                     return null;
+
+                // Enforce server-side authoritative database price to prevent client tampering
+                var unitPrice = product.Price;
+                var itemTotal = unitPrice * itemDto.Quantity;
 
                 var orderItem = new OrderItem
                 {
                     ProductId = itemDto.ProductId,
                     Quantity = itemDto.Quantity,
-                    UnitPrice = itemDto.UnitPrice,
+                    UnitPrice = unitPrice,
+                    TotalPrice = itemTotal,
                     ProductSnapshot = product.Name
                 };
 
-                orderItem.CalculateTotalPrice();
                 order.OrderItems.Add(orderItem);
+                totalPrice += itemTotal;
 
-                totalPrice += orderItem.TotalPrice;
-
-                // Update stock
+                // Decrement stock
                 product.Stock -= itemDto.Quantity;
             }
 
-            order.TotalPrice = totalPrice;
+            decimal shipping = totalPrice >= 100 ? 0 : 9.99m;
+            order.TotalPrice = totalPrice + shipping;
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -97,15 +103,56 @@ namespace Final_Efstathiadis_Theodors.Services
             return await _context.Orders
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
+                .Include(o => o.User)
                 .FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId);
+        }
+
+        public async Task<Order?> GetOrderByIdAsync(int orderId)
+        {
+            return await _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
         }
 
         public async Task<List<Order>> GetUserOrdersAsync(string userId)
         {
             return await _context.Orders
                 .Where(o => o.UserId == userId)
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
+        }
+
+        public async Task<List<Order>> GetAllOrdersAsync(OrderStatus? status = null, string? search = null)
+        {
+            var query = _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .Include(o => o.User)
+                .AsQueryable();
+
+            if (status.HasValue)
+            {
+                query = query.Where(o => o.Status == status.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                if (int.TryParse(term, out int orderId))
+                {
+                    query = query.Where(o => o.Id == orderId || (o.User != null && (o.User.Email!.Contains(term) || o.User.FirstName.Contains(term) || o.User.LastName.Contains(term))));
+                }
+                else
+                {
+                    query = query.Where(o => o.User != null && (o.User.Email!.Contains(term) || o.User.FirstName.Contains(term) || o.User.LastName.Contains(term)));
+                }
+            }
+
+            return await query.OrderByDescending(o => o.OrderDate).ToListAsync();
         }
 
         public async Task<bool> CancelOrderAsync(int orderId, string userId)
@@ -140,15 +187,31 @@ namespace Final_Efstathiadis_Theodors.Services
 
         public async Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus status)
         {
-            var order = await _context.Orders.FindAsync(orderId);
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
             if (order == null)
                 return false;
 
+            // If cancelling from non-cancelled, restore stock
+            if (status == OrderStatus.Cancelled && order.Status != OrderStatus.Cancelled)
+            {
+                foreach (var item in order.OrderItems)
+                {
+                    if (item.Product != null)
+                    {
+                        item.Product.Stock += item.Quantity;
+                    }
+                }
+            }
+
             order.Status = status;
 
-            if (status == OrderStatus.Shipped)
+            if (status == OrderStatus.Shipped && !order.ShippedDate.HasValue)
                 order.ShippedDate = DateTime.UtcNow;
-            else if (status == OrderStatus.Delivered)
+            else if (status == OrderStatus.Delivered && !order.DeliveredDate.HasValue)
                 order.DeliveredDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -162,7 +225,7 @@ namespace Final_Efstathiadis_Theodors.Services
             foreach (var item in items)
             {
                 var product = await _context.Products.FindAsync(item.ProductId);
-                if (product != null)
+                if (product != null && product.IsActive)
                 {
                     total += product.Price * item.Quantity;
                 }
