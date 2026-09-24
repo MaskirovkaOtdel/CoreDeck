@@ -1,0 +1,277 @@
+@model CompareViewModel
+
+@{
+    ViewData["Title"] = "Hardware Comparison Matrix";
+    var lowestPrice = Model.GetLowestPrice();
+}
+
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb cyber-breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")">Home</a></li>
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Product")">Arsenal</a></li>
+            <li class="breadcrumb-item active text-cyan" aria-current="page">Hardware Matrix Comparison</li>
+        </ol>
+    </nav>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show cyber-alert mb-4" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show cyber-alert mb-4" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Header Banner -->
+    <div class="card shadow-lg cyber-card mb-4 border-secondary">
+        <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="cyber-logo-box"><i class="fas fa-columns text-cyan"></i></span>
+                    <h2 class="text-cyan fw-bold mb-0">Hardware Comparison Matrix</h2>
+                    <span class="badge bg-cyber-neon text-dark font-monospace">@Model.Products.Count / @CompareViewModel.MaxProducts SLOTS</span>
+                </div>
+                <p class="text-muted small mb-0 font-monospace">
+                    Side-by-side architectural bench, pricing differentials, and stock telemetry
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                @if (Model.CanAddMore)
+                {
+                    <a href="@Url.Action("Index", "Product")" class="btn btn-outline-cyber btn-sm">
+                        <i class="fas fa-plus me-1"></i> Add Component
+                    </a>
+                }
+                @if (Model.HasProducts)
+                {
+                    <form asp-controller="Compare" asp-action="Clear" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-trash-alt me-1"></i> Reset Matrix
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.HasProducts)
+    {
+        <!-- Empty Matrix State -->
+        <div class="card shadow-lg cyber-card text-center py-5 border-secondary">
+            <div class="card-body py-5">
+                <div class="mb-4">
+                    <i class="fas fa-balance-scale-right fa-4x text-muted opacity-50"></i>
+                </div>
+                <h4 class="text-light fw-bold">Comparison Matrix Is Standby</h4>
+                <p class="text-muted small mx-auto mb-4" style="max-width: 480px;">
+                    No hardware modules queued for analysis. Browse our cyber hardware catalog and click the compare icon on up to 4 components to run side-by-side evaluations.
+                </p>
+                <a href="@Url.Action("Index", "Product")" class="btn btn-cyber-primary px-4 py-2">
+                    <i class="fas fa-microchip me-2"></i> Browse Hardware Arsenal
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Matrix Comparison Table -->
+        <div class="card shadow-lg cyber-card border-secondary overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-bordered cyber-table mb-0 align-middle">
+                    <thead class="bg-dark">
+                        <tr>
+                            <th style="min-width: 180px; width: 180px;" class="text-cyan font-monospace bg-dark">
+                                <i class="fas fa-microchip me-1"></i> Matrix Metric
+                            </th>
+                            @foreach (var prod in Model.Products)
+                            {
+                                <th style="min-width: 240px; width: @(82 / Math.Max(1, Model.Products.Count + (Model.CanAddMore ? 1 : 0)))%;" class="text-center bg-dark">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-dark bg-opacity-75 text-cyan border border-secondary font-monospace small">
+                                            CD-@prod.Id.ToString("D6")
+                                        </span>
+                                        <form asp-controller="Compare" asp-action="Remove" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@prod.Id" />
+                                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" title="Remove from Matrix">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <div class="position-relative overflow-hidden rounded mb-2" style="height: 180px; background: #070a10;">
+                                        <img src="@prod.ImageUrl" alt="@prod.Name" class="w-100 h-100 object-fit-contain p-2" />
+                                    </div>
+                                    <span class="badge bg-secondary bg-opacity-50 text-light small mb-1">@prod.Category?.Name</span>
+                                    <h6 class="text-light fw-bold mb-0">@prod.Name</h6>
+                                </th>
+                            }
+                            @if (Model.CanAddMore)
+                            {
+                                <th style="min-width: 200px;" class="text-center align-middle bg-dark bg-opacity-50">
+                                    <div class="py-5">
+                                        <i class="fas fa-plus-circle fa-3x text-muted mb-3 d-block opacity-50"></i>
+                                        <span class="text-muted d-block small mb-3">Empty Matrix Slot</span>
+                                        <a href="@Url.Action("Index", "Product")" class="btn btn-outline-cyber btn-sm">
+                                            <i class="fas fa-plus me-1"></i> Add Component
+                                        </a>
+                                    </div>
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Price Evaluation Row -->
+                        <tr>
+                            <td class="font-monospace fw-bold text-light bg-dark bg-opacity-25">
+                                <i class="fas fa-tag text-cyan me-1"></i> Requisition Price
+                            </td>
+                            @foreach (var prod in Model.Products)
+                            {
+                                bool isBestPrice = lowestPrice.HasValue && prod.Price == lowestPrice.Value && Model.Products.Count > 1;
+                                <td class="text-center @(isBestPrice ? "bg-success bg-opacity-10" : "")">
+                                    <div class="h4 font-monospace fw-bold text-cyan mb-1">
+                                        €@prod.Price.ToString("F2")
+                                    </div>
+                                    @if (isBestPrice)
+                                    {
+                                        <span class="badge bg-cyber-neon text-dark font-monospace small">
+                                            <i class="fas fa-star me-1"></i> Lowest Price Delta
+                                        </span>
+                                    }
+                                </td>
+                            }
+                            @if (Model.CanAddMore) { <td class="text-center text-muted bg-dark bg-opacity-10">-</td> }
+                        </tr>
+
+                        <!-- Stock & Logistics Row -->
+                        <tr>
+                            <td class="font-monospace fw-bold text-light bg-dark bg-opacity-25">
+                                <i class="fas fa-warehouse text-cyan me-1"></i> Stock Status
+                            </td>
+                            @foreach (var prod in Model.Products)
+                            {
+                                <td class="text-center">
+                                    @if (prod.Stock > 10)
+                                    {
+                                        <span class="badge bg-success bg-opacity-25 text-success border border-success px-2 py-1 font-monospace">
+                                            <i class="fas fa-check-circle me-1"></i> Available (@prod.Stock units)
+                                        </span>
+                                    }
+                                    else if (prod.Stock > 0)
+                                    {
+                                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning px-2 py-1 font-monospace">
+                                            <i class="fas fa-exclamation-triangle me-1"></i> Low Stock (@prod.Stock units)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger px-2 py-1 font-monospace">
+                                            <i class="fas fa-ban me-1"></i> Depleted
+                                        </span>
+                                    }
+                                </td>
+                            }
+                            @if (Model.CanAddMore) { <td class="text-center text-muted bg-dark bg-opacity-10">-</td> }
+                        </tr>
+
+                        <!-- Rating & Operator Reviews Row -->
+                        <tr>
+                            <td class="font-monospace fw-bold text-light bg-dark bg-opacity-25">
+                                <i class="fas fa-star text-warning me-1"></i> Operator Score
+                            </td>
+                            @foreach (var prod in Model.Products)
+                            {
+                                var avgRating = Model.GetAverageRating(prod);
+                                var reviewCount = Model.GetReviewCount(prod);
+                                <td class="text-center">
+                                    <div class="text-warning mb-1">
+                                        @for (int s = 1; s <= 5; s++)
+                                        {
+                                            if (avgRating >= s)
+                                            {
+                                                <i class="fas fa-star"></i>
+                                            }
+                                            else if (avgRating >= s - 0.5)
+                                            {
+                                                <i class="fas fa-star-half-alt"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="far fa-star"></i>
+                                            }
+                                        }
+                                    </div>
+                                    <span class="text-muted small font-monospace">
+                                        @(avgRating > 0 ? $"{avgRating:F1} / 5.0 ({reviewCount} reviews)" : "No reviews yet")
+                                    </span>
+                                </td>
+                            }
+                            @if (Model.CanAddMore) { <td class="text-center text-muted bg-dark bg-opacity-10">-</td> }
+                        </tr>
+
+                        <!-- Architecture & Specs Row -->
+                        <tr>
+                            <td class="font-monospace fw-bold text-light bg-dark bg-opacity-25">
+                                <i class="fas fa-info-circle text-cyan me-1"></i> Architecture
+                            </td>
+                            @foreach (var prod in Model.Products)
+                            {
+                                <td>
+                                    <p class="text-light small mb-0 font-monospace" style="max-height: 120px; overflow-y: auto;">
+                                        @prod.Description
+                                    </p>
+                                </td>
+                            }
+                            @if (Model.CanAddMore) { <td class="text-center text-muted bg-dark bg-opacity-10">-</td> }
+                        </tr>
+
+                        <!-- Action Direct Requisition Row -->
+                        <tr>
+                            <td class="font-monospace fw-bold text-light bg-dark bg-opacity-25">
+                                <i class="fas fa-shopping-cart text-cyan me-1"></i> Actions
+                            </td>
+                            @foreach (var prod in Model.Products)
+                            {
+                                <td class="text-center p-3">
+                                    <div class="d-grid gap-2">
+                                        <a href="@Url.Action("Details", "Product", new { id = prod.Id })" class="btn btn-outline-secondary btn-sm">
+                                            <i class="fas fa-eye me-1"></i> Full Specs
+                                        </a>
+                                        @if (prod.Stock > 0)
+                                        {
+                                            <form asp-controller="Cart" asp-action="AddToCart" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="productId" value="@prod.Id" />
+                                                <input type="hidden" name="quantity" value="1" />
+                                                <button type="submit" class="btn btn-cyber-primary btn-sm w-100">
+                                                    <i class="fas fa-cart-plus me-1"></i> Add to Cart
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-secondary btn-sm w-100" disabled>
+                                                <i class="fas fa-times me-1"></i> Depleted
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                            @if (Model.CanAddMore) { <td class="text-center text-muted bg-dark bg-opacity-10">-</td> }
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

@@ -175,6 +175,13 @@
                                                 title="@(isWishlisted ? "Remove from Wishlist" : "Save to Wishlist")">
                                             <i class="@(isWishlisted ? "fas fa-heart text-danger" : "far fa-heart") fa-lg"></i>
                                         </button>
+                                        <button type="submit" 
+                                                formaction="@Url.Action("Add", "Compare", new { id = Model.Id })" 
+                                                formmethod="post"
+                                                class="btn btn-outline-secondary btn-lg py-3 px-3" 
+                                                title="Add to Comparison Matrix">
+                                            <i class="fas fa-columns text-cyan fa-lg"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -192,6 +199,14 @@
                                     title="@(isWishlisted ? "Remove from Wishlist" : "Save to Wishlist")">
                                 <i class="@(isWishlisted ? "fas fa-heart text-danger" : "far fa-heart") fa-lg"></i>
                             </button>
+                            <form asp-controller="Compare" asp-action="Add" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <button type="submit" 
+                                        class="btn btn-outline-secondary btn-lg py-3 px-3" 
+                                        title="Add to Comparison Matrix">
+                                    <i class="fas fa-columns text-cyan fa-lg"></i>
+                                </button>
+                            </form>
                         </div>
                     }
 

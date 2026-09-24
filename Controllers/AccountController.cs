@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using Final_Efstathiadis_Theodors.Data;
 using Final_Efstathiadis_Theodors.Models;
 
 namespace Final_Efstathiadis_Theodors.Controllers
@@ -11,15 +13,18 @@ namespace Final_Efstathiadis_Theodors.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<AccountController> _logger;
+        private readonly ApplicationDbContext _context;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ILogger<AccountController> logger)
+            ILogger<AccountController> logger,
+            ApplicationDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            _context = context;
         }
 
         // GET: Account/Register
@@ -126,13 +131,68 @@ namespace Final_Efstathiadis_Theodors.Controllers
 
         // GET: Account/Profile
         [Authorize]
-        public async Task<IActionResult> Profile()
+        public async Task<IActionResult> Profile(string? status, string? search)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
                 return RedirectToAction(nameof(Login));
 
-            return View(user);
+            var userOrdersQuery = _context.Orders
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .Where(o => o.UserId == user.Id);
+
+            // Compute telemetry metrics
+            var totalOrders = await userOrdersQuery.CountAsync();
+            var lifetimeSpent = await userOrdersQuery
+                .Where(o => o.Status != OrderStatus.Cancelled)
+                .SumAsync(o => (decimal?)o.TotalPrice) ?? 0m;
+            var totalWishlistItems = await _context.WishlistItems
+                .CountAsync(w => w.UserId == user.Id);
+
+            // Apply filtering for order history
+            var filteredOrdersQuery = userOrdersQuery.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(status) && !status.Equals("All", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Enum.TryParse<OrderStatus>(status, true, out var parsedStatus))
+                {
+                    filteredOrdersQuery = filteredOrdersQuery.Where(o => o.Status == parsedStatus);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                if (int.TryParse(term.Replace("#", "").Trim(), out var parsedOrderId))
+                {
+                    filteredOrdersQuery = filteredOrdersQuery.Where(o => o.Id == parsedOrderId || 
+                        o.OrderItems.Any(oi => oi.Product != null && oi.Product.Name.Contains(term)));
+                }
+                else
+                {
+                    filteredOrdersQuery = filteredOrdersQuery.Where(o => 
+                        o.ShippingAddress.Contains(term) ||
+                        o.OrderItems.Any(oi => oi.Product != null && oi.Product.Name.Contains(term)));
+                }
+            }
+
+            var orders = await filteredOrdersQuery
+                .OrderByDescending(o => o.OrderDate)
+                .ToListAsync();
+
+            var viewModel = new UserProfileViewModel
+            {
+                User = user,
+                Orders = orders,
+                TotalOrders = totalOrders,
+                LifetimeSpent = lifetimeSpent,
+                TotalWishlistItems = totalWishlistItems,
+                CurrentStatus = string.IsNullOrWhiteSpace(status) ? "All" : status,
+                SearchTerm = search
+            };
+
+            return View(viewModel);
         }
 
         // GET: Account/EditProfile

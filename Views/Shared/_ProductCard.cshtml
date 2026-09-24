@@ -96,6 +96,15 @@
                     <i class="@(isWishlisted ? "fas fa-heart text-danger" : "far fa-heart")"></i>
                 </button>
             </form>
+            <form asp-controller="Compare" asp-action="Add" method="post" class="d-inline">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" 
+                        class="btn btn-outline-secondary btn-sm compare-add-btn" 
+                        data-product-id="@Model.Id" 
+                        title="Add to Comparison Matrix">
+                    <i class="fas fa-columns text-cyan"></i>
+                </button>
+            </form>
         </div>
     </div>
 </div>

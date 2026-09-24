@@ -1,7 +1,8 @@
-@model ApplicationUser
+@model UserProfileViewModel
 
 @{
-    ViewData["Title"] = "Operator Profile";
+    ViewData["Title"] = "Operator Profile & Telemetry";
+    var user = Model.User;
 }
 
 <div class="container py-4">
@@ -13,9 +14,53 @@
         </div>
     }
 
+    <!-- Telemetry Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-lg cyber-card border-secondary h-100">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-monospace d-block">Lifetime Spend Telemetry</span>
+                        <span class="h3 text-cyan fw-bold font-monospace mb-0">€@Model.LifetimeSpent.ToString("F2")</span>
+                    </div>
+                    <div class="rounded-circle p-3 bg-dark border border-secondary text-cyan">
+                        <i class="fas fa-euro-sign fa-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-lg cyber-card border-secondary h-100">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-monospace d-block">Total Orders Dispatched</span>
+                        <span class="h3 text-light fw-bold font-monospace mb-0">@Model.TotalOrders</span>
+                    </div>
+                    <div class="rounded-circle p-3 bg-dark border border-secondary text-success">
+                        <i class="fas fa-box-open fa-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-lg cyber-card border-secondary h-100">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small text-uppercase font-monospace d-block">Saved Arsenal Items</span>
+                        <span class="h3 text-warning fw-bold font-monospace mb-0">@Model.TotalWishlistItems</span>
+                    </div>
+                    <div class="rounded-circle p-3 bg-dark border border-secondary text-danger">
+                        <i class="fas fa-heart fa-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <div class="col-lg-8">
-            <div class="card shadow-lg cyber-card">
+            <!-- Operator Identity -->
+            <div class="card shadow-lg cyber-card mb-4">
                 <div class="card-header cyber-card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h4 class="mb-0"><i class="fas fa-id-card me-2"></i> Operator Identity</h4>
                     <span class="badge bg-cyber-neon text-dark">Verified User</span>
@@ -24,22 +69,22 @@
                     <div class="row mb-4 g-3">
                         <div class="col-md-6">
                             <h6 class="text-cyan small text-uppercase fw-bold">First Name</h6>
-                            <p class="h5 text-light">@Model.FirstName</p>
+                            <p class="h5 text-light">@user.FirstName</p>
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-cyan small text-uppercase fw-bold">Last Name</h6>
-                            <p class="h5 text-light">@Model.LastName</p>
+                            <p class="h5 text-light">@user.LastName</p>
                         </div>
                     </div>
 
                     <div class="row mb-4 g-3">
                         <div class="col-md-6">
                             <h6 class="text-cyan small text-uppercase fw-bold">Email Protocol</h6>
-                            <p class="h5 text-light font-monospace">@Model.Email</p>
+                            <p class="h5 text-light font-monospace">@user.Email</p>
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-cyan small text-uppercase fw-bold">Comms Line (Phone)</h6>
-                            <p class="h5 text-light">@(string.IsNullOrEmpty(Model.PhoneNumber) ? "Not configured" : Model.PhoneNumber)</p>
+                            <p class="h5 text-light">@(string.IsNullOrEmpty(user.PhoneNumber) ? "Not configured" : user.PhoneNumber)</p>
                         </div>
                     </div>
 
@@ -50,22 +95,22 @@
                     <div class="row mb-3 g-3">
                         <div class="col-md-6">
                             <h6 class="text-muted small">Street Address</h6>
-                            <p class="text-light">@(string.IsNullOrEmpty(Model.Address) ? "No address registered" : Model.Address)</p>
+                            <p class="text-light">@(string.IsNullOrEmpty(user.Address) ? "No address registered" : user.Address)</p>
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-muted small">City</h6>
-                            <p class="text-light">@(string.IsNullOrEmpty(Model.City) ? "Not set" : Model.City)</p>
+                            <p class="text-light">@(string.IsNullOrEmpty(user.City) ? "Not set" : user.City)</p>
                         </div>
                     </div>
 
                     <div class="row mb-4 g-3">
                         <div class="col-md-6">
                             <h6 class="text-muted small">Postal Code</h6>
-                            <p class="text-light">@(string.IsNullOrEmpty(Model.PostalCode) ? "Not set" : Model.PostalCode)</p>
+                            <p class="text-light">@(string.IsNullOrEmpty(user.PostalCode) ? "Not set" : user.PostalCode)</p>
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-muted small">Country</h6>
-                            <p class="text-light">@(string.IsNullOrEmpty(Model.Country) ? "Not set" : Model.Country)</p>
+                            <p class="text-light">@(string.IsNullOrEmpty(user.Country) ? "Not set" : user.Country)</p>
                         </div>
                     </div>
 
@@ -77,6 +122,123 @@
                             <i class="fas fa-key me-1"></i> Change Password
                         </a>
                     </div>
+                </div>
+            </div>
+
+            <!-- Order Filtering & History Console -->
+            <div class="card shadow-lg cyber-card">
+                <div class="card-header cyber-card-header bg-dark d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+                    <h5 class="mb-0 text-cyan"><i class="fas fa-clipboard-list me-2"></i> Order History & Operations</h5>
+                    <span class="badge bg-secondary font-monospace small">@Model.Orders.Count Records Found</span>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Order Filter Tabs & Search -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                        <!-- Status Filter Buttons -->
+                        <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Order status filter">
+                            <a href="@Url.Action("Profile", "Account", new { status = "All", search = Model.SearchTerm })" 
+                               class="btn @(Model.CurrentStatus == "All" || string.IsNullOrEmpty(Model.CurrentStatus) ? "btn-cyber-primary" : "btn-outline-secondary")">
+                                All
+                            </a>
+                            <a href="@Url.Action("Profile", "Account", new { status = "Pending", search = Model.SearchTerm })" 
+                               class="btn @(Model.CurrentStatus == "Pending" ? "btn-warning text-dark fw-bold" : "btn-outline-secondary")">
+                                Pending
+                            </a>
+                            <a href="@Url.Action("Profile", "Account", new { status = "Shipped", search = Model.SearchTerm })" 
+                               class="btn @(Model.CurrentStatus == "Shipped" ? "btn-info text-dark fw-bold" : "btn-outline-secondary")">
+                                Shipped
+                            </a>
+                            <a href="@Url.Action("Profile", "Account", new { status = "Delivered", search = Model.SearchTerm })" 
+                               class="btn @(Model.CurrentStatus == "Delivered" ? "btn-success fw-bold" : "btn-outline-secondary")">
+                                Delivered
+                            </a>
+                        </div>
+
+                        <!-- Order Search Form -->
+                        <form method="get" asp-controller="Account" asp-action="Profile" class="d-flex gap-2">
+                            <input type="hidden" name="status" value="@Model.CurrentStatus" />
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="search" class="form-control cyber-input" placeholder="Search Order # or item..." value="@Model.SearchTerm" />
+                                <button type="submit" class="btn btn-cyber-primary"><i class="fas fa-search"></i></button>
+                                @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
+                                {
+                                    <a href="@Url.Action("Profile", "Account", new { status = Model.CurrentStatus })" class="btn btn-outline-secondary" title="Clear Search">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                }
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Orders Table / List -->
+                    @if (Model.Orders == null || !Model.Orders.Any())
+                    {
+                        <div class="alert alert-dark border-secondary text-center py-4 mb-0">
+                            <i class="fas fa-search fa-2x text-muted mb-2 d-block"></i>
+                            <span class="text-muted">No orders match the selected filter criteria (@Model.CurrentStatus).</span>
+                            @if (Model.CurrentStatus != "All" || !string.IsNullOrWhiteSpace(Model.SearchTerm))
+                            {
+                                <div class="mt-2">
+                                    <a href="@Url.Action("Profile", "Account")" class="btn btn-outline-cyber btn-sm">Reset Filters</a>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover cyber-table mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Items</th>
+                                        <th>Total</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var order in Model.Orders)
+                                    {
+                                        <tr>
+                                            <td class="font-monospace text-cyan fw-bold">#@order.Id</td>
+                                            <td class="small text-muted font-monospace">@order.OrderDate.ToString("yyyy-MM-dd")</td>
+                                            <td>
+                                                @switch (order.Status)
+                                                {
+                                                    case OrderStatus.Pending:
+                                                        <span class="badge bg-warning text-dark font-monospace">Pending</span>
+                                                        break;
+                                                    case OrderStatus.Processing:
+                                                        <span class="badge bg-primary font-monospace">Processing</span>
+                                                        break;
+                                                    case OrderStatus.Shipped:
+                                                        <span class="badge bg-info text-dark font-monospace">Shipped</span>
+                                                        break;
+                                                    case OrderStatus.Delivered:
+                                                        <span class="badge bg-success font-monospace">Delivered</span>
+                                                        break;
+                                                    case OrderStatus.Cancelled:
+                                                        <span class="badge bg-danger font-monospace">Cancelled</span>
+                                                        break;
+                                                }
+                                            </td>
+                                            <td class="small text-light">
+                                                @order.OrderItems.Count @(order.OrderItems.Count == 1 ? "unit" : "units")
+                                            </td>
+                                            <td class="font-monospace text-cyan fw-bold">€@order.TotalPrice.ToString("F2")</td>
+                                            <td class="text-end">
+                                                <a href="@Url.Action("Details", "Order", new { id = order.Id })" class="btn btn-outline-cyber btn-sm">
+                                                    <i class="fas fa-eye me-1"></i> Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -99,7 +261,7 @@
                         }
                     </div>
                     <p class="text-muted small mb-0">
-                        Commissioned on @Model.CreatedDate.ToString("MMMM dd, yyyy")
+                        Commissioned on @user.CreatedDate.ToString("MMMM dd, yyyy")
                     </p>
                 </div>
             </div>
@@ -109,8 +271,14 @@
                     <h5 class="mb-0"><i class="fas fa-bolt text-warning me-2"></i> Quick Deck</h5>
                 </div>
                 <div class="card-body d-grid gap-2">
+                    <a href="@Url.Action("Index", "Compare")" class="btn btn-outline-cyber btn-sm text-start">
+                        <i class="fas fa-columns me-2 text-cyan"></i> Hardware Comparison Matrix
+                    </a>
                     <a href="@Url.Action("MyOrders", "Order")" class="btn btn-outline-cyber btn-sm text-start">
                         <i class="fas fa-box-open me-2 text-cyan"></i> Deployment Orders
+                    </a>
+                    <a href="@Url.Action("Index", "Wishlist")" class="btn btn-outline-cyber btn-sm text-start">
+                        <i class="fas fa-heart me-2 text-danger"></i> Saved Wishlist
                     </a>
                     <a href="@Url.Action("Index", "Cart")" class="btn btn-outline-cyber btn-sm text-start">
                         <i class="fas fa-shopping-cart me-2 text-cyan"></i> Active Requisition Cart

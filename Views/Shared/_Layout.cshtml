@@ -33,7 +33,7 @@
                 <a class="navbar-brand cyber-brand fw-bold d-flex align-items-center" asp-controller="Home" asp-action="Index">
                     <span class="cyber-logo-box me-2"><i class="fas fa-microchip"></i></span>
                     <span class="brand-text">CORE<span class="text-cyan">DECK</span></span>
-                    <span class="badge bg-cyber-neon text-dark ms-2 small d-none d-sm-inline-block font-monospace">ALPHA v0.1.0</span>
+                    <span class="badge bg-cyber-neon text-dark ms-2 small d-none d-sm-inline-block font-monospace">ALPHA v0.3.0</span>
                 </a>
 
                 <!-- Mobile Toggle -->
@@ -84,8 +84,16 @@
                         </div>
                     </form>
 
-                    <!-- User and Cart Actions -->
+                    <!-- User, Compare and Cart Actions -->
                     <ul class="navbar-nav mb-2 mb-lg-0 align-items-lg-center">
+                        <!-- Dynamic Hardware Compare Badge -->
+                        <li class="nav-item me-lg-2">
+                            <a class="nav-link d-flex align-items-center cyber-compare-link" asp-controller="Compare" asp-action="Index">
+                                <i class="fas fa-columns me-1 text-cyan"></i> Compare
+                                @await Component.InvokeAsync("CompareBadge")
+                            </a>
+                        </li>
+
                         <!-- Dynamic Cart Badge ViewComponent -->
                         <li class="nav-item me-lg-2">
                             <a class="nav-link d-flex align-items-center cyber-cart-link" asp-controller="Cart" asp-action="Index">
