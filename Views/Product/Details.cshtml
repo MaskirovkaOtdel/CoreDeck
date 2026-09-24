@@ -3,6 +3,12 @@
 @{
     ViewData["Title"] = Model.Name;
     var categories = (List<Category>?)ViewData["Categories"] ?? new();
+    bool isWishlisted = ViewBag.IsWishlisted == true;
+    bool isVerifiedBuyer = ViewBag.IsVerifiedBuyer == true;
+    var reviews = Model.Reviews?.OrderByDescending(r => r.CreatedDate).ToList() ?? new List<ProductReview>();
+    int totalReviews = reviews.Count;
+    double avgRating = totalReviews > 0 ? reviews.Average(r => r.Rating) : 0;
+    int verifiedCount = reviews.Count(r => r.IsVerifiedBuyer);
 }
 
 <div class="container py-3">
@@ -71,13 +77,32 @@
                     <!-- Rating -->
                     <div class="d-flex align-items-center mb-4">
                         <div class="text-warning me-2">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
+                            @for (int s = 1; s <= 5; s++)
+                            {
+                                if (avgRating >= s)
+                                {
+                                    <i class="fas fa-star"></i>
+                                }
+                                else if (avgRating >= s - 0.5)
+                                {
+                                    <i class="fas fa-star-half-alt"></i>
+                                }
+                                else
+                                {
+                                    <i class="far fa-star"></i>
+                                }
+                            }
                         </div>
-                        <span class="text-muted small font-monospace">5.0 / 5.0 (Enthusiast Verified)</span>
+                        <span class="text-muted small font-monospace">
+                            @if (totalReviews > 0)
+                            {
+                                <span>@avgRating.ToString("F1") / 5.0 (@totalReviews @(totalReviews == 1 ? "Review" : "Reviews") &bull; @verifiedCount Verified)</span>
+                            }
+                            else
+                            {
+                                <span>No Reviews Yet &bull; Be the first to evaluate</span>
+                            }
+                        </span>
                     </div>
 
                     <div class="cyber-divider mb-4"></div>
@@ -140,18 +165,32 @@
                                     </div>
                                 </div>
                                 <div class="col-sm-8">
-                                    <button type="submit" class="btn btn-cyber-primary btn-lg w-100 py-3 fw-bold">
-                                        <i class="fas fa-shopping-cart me-2"></i> Add to Requisition Cart
-                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-cyber-primary btn-lg flex-grow-1 py-3 fw-bold">
+                                            <i class="fas fa-shopping-cart me-2"></i> Add to Requisition Cart
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary btn-lg py-3 px-3 wishlist-toggle-btn @(isWishlisted ? "active text-danger border-danger" : "")" 
+                                                data-product-id="@Model.Id" 
+                                                title="@(isWishlisted ? "Remove from Wishlist" : "Save to Wishlist")">
+                                            <i class="@(isWishlisted ? "fas fa-heart text-danger" : "far fa-heart") fa-lg"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </form>
                     }
                     else
                     {
-                        <div class="mb-4">
-                            <button type="button" class="btn btn-secondary btn-lg w-100 py-3" disabled>
+                        <div class="d-flex gap-2 mb-4">
+                            <button type="button" class="btn btn-secondary btn-lg flex-grow-1 py-3" disabled>
                                 <i class="fas fa-ban me-2"></i> Unit Depleted
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-outline-secondary btn-lg py-3 px-3 wishlist-toggle-btn @(isWishlisted ? "active text-danger border-danger" : "")" 
+                                    data-product-id="@Model.Id" 
+                                    title="@(isWishlisted ? "Remove from Wishlist" : "Save to Wishlist")">
+                                <i class="@(isWishlisted ? "fas fa-heart text-danger" : "far fa-heart") fa-lg"></i>
                             </button>
                         </div>
                     }
@@ -191,6 +230,204 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hardware Reviews & Telemetry Section -->
+    <div class="card shadow-lg cyber-card mt-5">
+        <div class="card-header cyber-card-header bg-dark d-flex justify-content-between align-items-center p-3 p-md-4">
+            <div>
+                <h4 class="text-cyan fw-bold mb-1">
+                    <i class="fas fa-comments me-2"></i> Operator Telemetry & Reviews
+                </h4>
+                <p class="text-muted small mb-0">Verified hardware evaluations and real-world performance feedback</p>
+            </div>
+            @if (totalReviews > 0)
+            {
+                <span class="badge bg-secondary bg-opacity-50 text-cyan border border-secondary font-monospace px-3 py-2">
+                    @totalReviews @(totalReviews == 1 ? "Review" : "Reviews") &bull; @avgRating.ToString("F1") ★
+                </span>
+            }
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+            <!-- Review Breakdown Grid -->
+            <div class="row g-4 mb-5 pb-4 border-bottom border-secondary">
+                <!-- Summary Score -->
+                <div class="col-lg-4 text-center text-lg-start d-flex flex-column justify-content-center border-end-lg border-secondary pe-lg-4">
+                    <div class="display-3 fw-bold text-cyan font-monospace mb-1">
+                        @(totalReviews > 0 ? avgRating.ToString("F1") : "--")
+                    </div>
+                    <div class="text-warning fs-5 mb-2">
+                        @for (int s = 1; s <= 5; s++)
+                        {
+                            if (avgRating >= s)
+                            {
+                                <i class="fas fa-star"></i>
+                            }
+                            else if (avgRating >= s - 0.5)
+                            {
+                                <i class="fas fa-star-half-alt"></i>
+                            }
+                            else
+                            {
+                                <i class="far fa-star"></i>
+                            }
+                        }
+                    </div>
+                    <p class="text-muted small mb-2">Based on @totalReviews operator telemetry submissions</p>
+                    @if (verifiedCount > 0)
+                    {
+                        <div class="badge bg-success bg-opacity-25 text-success border border-success p-2 w-auto align-self-lg-start">
+                            <i class="fas fa-shield-check me-1"></i> @verifiedCount Verified Purchaser @(verifiedCount == 1 ? "Review" : "Reviews")
+                        </div>
+                    }
+                </div>
+
+                <!-- Star Rating Progress Bars -->
+                <div class="col-lg-8 ps-lg-4">
+                    <h6 class="text-light text-uppercase small fw-bold mb-3">Rating Breakdown</h6>
+                    @for (int star = 5; star >= 1; star--)
+                    {
+                        int starCount = reviews.Count(r => r.Rating == star);
+                        int percentage = totalReviews > 0 ? (int)Math.Round((double)starCount / totalReviews * 100) : 0;
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <div class="text-light small font-monospace text-nowrap" style="width: 55px;">
+                                @star <i class="fas fa-star text-warning"></i>
+                            </div>
+                            <div class="progress flex-grow-1 bg-dark" style="height: 10px; border-radius: 5px;">
+                                <div class="progress-bar bg-cyan" 
+                                     role="progressbar" 
+                                     style="width: @percentage%;" 
+                                     aria-valuenow="@percentage" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100"></div>
+                            </div>
+                            <div class="text-muted small font-monospace text-end" style="width: 70px;">
+                                @starCount (@percentage%)
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Review Submission Form -->
+            <div class="card bg-dark border-secondary p-4 mb-5">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <h5 class="text-light fw-bold mb-3">
+                        <i class="fas fa-pen-to-square text-cyan me-2"></i> Submit Telemetry Review
+                    </h5>
+                    @if (isVerifiedBuyer)
+                    {
+                        <div class="alert alert-success bg-success bg-opacity-10 border-success text-success py-2 px-3 small mb-3">
+                            <i class="fas fa-shield-check me-1"></i> <strong>Verified Purchaser:</strong> You previously purchased this component. Your review will be marked with a verified badge.
+                        </div>
+                    }
+                    <form asp-controller="Review" asp-action="AddReview" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="productId" value="@Model.Id" />
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label text-light small fw-bold">Star Rating</label>
+                                <select name="rating" class="form-select cyber-input" required>
+                                    <option value="5" selected>5 Stars - Exceptional Performance</option>
+                                    <option value="4">4 Stars - Highly Capable</option>
+                                    <option value="3">3 Stars - Average / Standard</option>
+                                    <option value="2">2 Stars - Subpar / Thermal Throttle</option>
+                                    <option value="1">1 Star - Critical Defect / Do Not Buy</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label text-light small fw-bold">Review Headline</label>
+                                <input type="text" name="title" class="form-control cyber-input" placeholder="Summary (e.g. Unbelievable 4K thermals and frame pacing)" maxlength="100" required />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-light small fw-bold">Detailed Evaluation</label>
+                                <textarea name="comment" class="form-control cyber-input" rows="4" placeholder="Detail your real-world experience, clocks, noise levels, cable routing, or stability..." maxlength="2000" required></textarea>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-cyber-primary px-4 py-2 fw-bold">
+                                    <i class="fas fa-paper-plane me-2"></i> Broadcast Review
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="text-center py-3">
+                        <i class="fas fa-lock text-cyan fa-2x mb-2"></i>
+                        <h6 class="text-light">Operator Authentication Required</h6>
+                        <p class="text-muted small mb-3">You must be logged in to broadcast telemetry reviews for this hardware.</p>
+                        <a href="@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path })" class="btn btn-outline-cyber btn-sm">
+                            <i class="fas fa-sign-in-alt me-1"></i> Sign In to Review
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <!-- Reviews Stream -->
+            <div>
+                <h5 class="text-light fw-bold mb-4">
+                    <i class="fas fa-stream text-cyan me-2"></i> Recent Telemetry Feed
+                </h5>
+
+                @if (!reviews.Any())
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                        <p class="mb-0">No operator reviews recorded for this component yet. Be the first to submit telemetry!</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var rev in reviews)
+                        {
+                            <div class="card bg-dark border-secondary p-3 p-md-4">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <div class="text-warning small">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= rev.Rating)
+                                                    {
+                                                        <i class="fas fa-star"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="far fa-star"></i>
+                                                    }
+                                                }
+                                            </div>
+                                            <h6 class="text-light fw-bold mb-0">@rev.Title</h6>
+                                            @if (rev.IsVerifiedBuyer)
+                                            {
+                                                <span class="badge bg-success bg-opacity-25 text-success border border-success ms-1 small">
+                                                    <i class="fas fa-shield-check me-1"></i> Verified Buyer
+                                                </span>
+                                            }
+                                        </div>
+                                        <div class="text-muted small">
+                                            <span class="text-cyan font-monospace">@(rev.User?.GetFullName() ?? rev.User?.UserName ?? "Enthusiast Operator")</span>
+                                            &bull; @rev.CreatedDate.ToString("MMM dd, yyyy")
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-secondary bg-opacity-25 text-muted font-monospace small">
+                                        #@rev.Id.ToString("D5")
+                                    </span>
+                                </div>
+                                <p class="text-light mb-0 small lh-base">
+                                    @rev.Comment
+                                </p>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>

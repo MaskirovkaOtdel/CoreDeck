@@ -45,5 +45,8 @@ namespace Final_Efstathiadis_Theodors.Models
 
         // Navigation property for cart items
         public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+
+        // Navigation property for reviews
+        public ICollection<ProductReview> Reviews { get; set; } = new List<ProductReview>();
     }
 }

@@ -32,6 +32,8 @@ namespace Final_Efstathiadis_Theodors.Models
         // Navigation properties
         public ICollection<Order> Orders { get; set; } = new List<Order>();
         public ICollection<Cart> Carts { get; set; } = new List<Cart>();
+        public ICollection<ProductReview> Reviews { get; set; } = new List<ProductReview>();
+        public ICollection<WishlistItem> WishlistItems { get; set; } = new List<WishlistItem>();
 
         public string GetFullName()
         {

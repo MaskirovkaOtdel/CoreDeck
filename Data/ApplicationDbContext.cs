@@ -17,6 +17,8 @@ namespace Final_Efstathiadis_Theodors.Data
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<ProductReview> ProductReviews { get; set; }
+        public DbSet<WishlistItem> WishlistItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -94,6 +96,27 @@ namespace Final_Efstathiadis_Theodors.Data
                 entity.HasOne(e => e.Cart).WithMany(c => c.CartItems).HasForeignKey(e => e.CartId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasOne(e => e.Product).WithMany(p => p.CartItems).HasForeignKey(e => e.ProductId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasIndex(e => new { e.CartId, e.ProductId }).IsUnique();
+            });
+
+            // ProductReview configuration
+            modelBuilder.Entity<ProductReview>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Comment).IsRequired().HasMaxLength(2000);
+                entity.HasOne(e => e.Product).WithMany(p => p.Reviews).HasForeignKey(e => e.ProductId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.User).WithMany(u => u.Reviews).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(e => e.ProductId);
+                entity.HasIndex(e => e.UserId);
+            });
+
+            // WishlistItem configuration
+            modelBuilder.Entity<WishlistItem>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(e => e.User).WithMany(u => u.WishlistItems).HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Product).WithMany().HasForeignKey(e => e.ProductId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(e => new { e.UserId, e.ProductId }).IsUnique();
             });
         }
     }

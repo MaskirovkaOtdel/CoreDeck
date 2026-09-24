@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Final_Efstathiadis_Theodors.Data;
@@ -8,11 +9,13 @@ namespace Final_Efstathiadis_Theodors.Controllers
     public class ProductController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser>? _userManager;
         private const int PageSize = 12;
 
-        public ProductController(ApplicationDbContext context)
+        public ProductController(ApplicationDbContext context, UserManager<ApplicationUser>? userManager = null)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: Product/Index
@@ -90,6 +93,19 @@ namespace Final_Efstathiadis_Theodors.Controllers
             ViewData["TotalCount"] = totalCount;
             ViewData["Categories"] = await _context.Categories.ToListAsync();
 
+            if (User.Identity?.IsAuthenticated == true && _userManager != null)
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null)
+                {
+                    var wishlistIds = await _context.WishlistItems
+                        .Where(w => w.UserId == user.Id)
+                        .Select(w => w.ProductId)
+                        .ToListAsync();
+                    ViewBag.WishlistProductIds = new HashSet<int>(wishlistIds);
+                }
+            }
+
             return View(products);
         }
 
@@ -101,12 +117,28 @@ namespace Final_Efstathiadis_Theodors.Controllers
 
             var product = await _context.Products
                 .Include(p => p.Category)
+                .Include(p => p.Reviews)
+                    .ThenInclude(r => r.User)
                 .FirstOrDefaultAsync(p => p.Id == id && p.IsActive);
 
             if (product == null)
                 return NotFound();
 
             ViewData["Categories"] = await _context.Categories.ToListAsync();
+
+            if (User.Identity?.IsAuthenticated == true && _userManager != null)
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null)
+                {
+                    ViewBag.IsWishlisted = await _context.WishlistItems
+                        .AnyAsync(w => w.UserId == user.Id && w.ProductId == product.Id);
+                    ViewBag.IsVerifiedBuyer = await _context.Orders
+                        .Where(o => o.UserId == user.Id && o.Status != OrderStatus.Cancelled)
+                        .AnyAsync(o => o.OrderItems.Any(oi => oi.ProductId == product.Id));
+                }
+            }
+
             return View(product);
         }
 
