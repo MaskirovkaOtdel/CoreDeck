@@ -10,7 +10,8 @@
 [![Entity Framework Core](https://img.shields.io/badge/EF%20Core-10.0-blueviolet?style=for-the-badge&logo=nuget&logoColor=white)](https://learn.microsoft.com/en-us/ef/core/)
 [![Bootstrap 5](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge&logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00f0ff?style=for-the-badge)](LICENSE)
-[![Status: Alpha v0.1.0](https://img.shields.io/badge/Status-Alpha%20v0.1.0-00ff66?style=for-the-badge)]()
+[![Status: v0.4.0](https://img.shields.io/badge/Status-v0.4.0-00ff66?style=for-the-badge)]()
+[![Tests: 28 Passed](https://img.shields.io/badge/Tests-28%20Passed-00ff66?style=for-the-badge)]()
 
 <p align="center">
   A modern, high-performance web storefront crafted specifically for PC builders, overclockers, and gaming enthusiasts. Built on ASP.NET Core 10 MVC with a dark slate/neon cyberpunk aesthetic.
