@@ -1,0 +1,12 @@
+**/.git
+**/.github
+**/.githooks
+**/.planning
+**/.vs
+**/bin
+**/obj
+**/tests
+**/TestResults
+*.user
+*.suo
+.env*

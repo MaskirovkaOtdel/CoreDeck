@@ -1,0 +1,13 @@
+services:
+  coredeck-community:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coredeck-community
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - UseInMemoryDatabase=true
+    restart: unless-stopped

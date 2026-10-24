@@ -10,8 +10,21 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("CoreDeckDB") 
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
+var useInMemory = builder.Configuration.GetValue<bool>("UseInMemoryDatabase")
+    || (string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.OrdinalIgnoreCase)
+        && (string.IsNullOrWhiteSpace(connectionString) || connectionString.Contains("(localdb)", StringComparison.OrdinalIgnoreCase)));
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+{
+    if (useInMemory)
+    {
+        options.UseInMemoryDatabase("CoreDeckContainerDB");
+    }
+    else
+    {
+        options.UseSqlServer(connectionString);
+    }
+});
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -64,6 +77,20 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
+app.MapGet("/health", async (ApplicationDbContext db) =>
+{
+    var canConnect = await db.Database.CanConnectAsync();
+    var productCount = await db.Products.CountAsync(p => p.IsActive);
+    return Results.Ok(new
+    {
+        status = canConnect ? "Healthy" : "Degraded",
+        edition = "Community",
+        version = "v0.4.0",
+        activeProducts = productCount,
+        timestamp = DateTime.UtcNow
+    });
+});
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
@@ -76,7 +103,14 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
-        await context.Database.MigrateAsync();
+        if (context.Database.IsRelational())
+        {
+            await context.Database.MigrateAsync();
+        }
+        else
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
         await DatabaseInitializerService.InitializeAsync(serviceProvider);
     }
     catch (Exception ex)
