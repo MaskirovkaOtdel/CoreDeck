@@ -480,3 +480,10 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Planning & Agent State
+.planning/
+
+# MSTest Results
+**/TestResults/
+*.trx

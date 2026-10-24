@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# CoreDeck Pre-Commit Security & Leak Guard
+
+STAGED_FILES=$(git diff --cached --name-only)
+FORBIDDEN_PATTERN='(\.env|premium|local|secret|credentials|license-key)'
+
+MATCHED=$(echo "$STAGED_FILES" | grep -E -i "$FORBIDDEN_PATTERN" || true)
+
+if [ -n "$MATCHED" ]; then
+    echo "❌ [PRE-COMMIT BLOCK] Sensitive or air-gapped files detected in staged index:"
+    echo "$MATCHED"
+    echo "Aborting commit to protect Dual-Version Quarantine integrity."
+    exit 1
+fi
+
+exit 0
