@@ -1,0 +1,9 @@
+# CoreDeck Repository Ownership & Review Enforcement
+# All third-party Pull Requests require explicit approval from @MaskirovkaOtdel (thod.efstathiadis@gmail.com)
+
+* @MaskirovkaOtdel
+/.github/ @MaskirovkaOtdel
+/Controllers/ @MaskirovkaOtdel
+/Data/ @MaskirovkaOtdel
+/Models/ @MaskirovkaOtdel
+/Services/ @MaskirovkaOtdel

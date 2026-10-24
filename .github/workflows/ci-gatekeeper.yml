@@ -1,0 +1,172 @@
+name: Gatekeeper CI, Author Verification & Auto-PR Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+      - 'contrib/**'
+      - beta
+      - experimental
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  verify-and-audit:
+    name: CI Quality, Leak & Author Identity Gate
+    runs-on: ubuntu-latest
+    outputs:
+      is_trusted_owner: ${{ steps.identity.outputs.is_trusted_owner }}
+      author_name: ${{ steps.identity.outputs.author_name }}
+      author_email: ${{ steps.identity.outputs.author_email }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Pre-Commit & Airgap Leak Audit
+        run: |
+          echo "Scanning committed files for sensitive patterns..."
+          MATCHED=$(git ls-files | grep -E -i '(\.env|premium|local|secret|credentials|license-key)' || true)
+          if [ -n "$MATCHED" ]; then
+            echo "::error::Forbidden sensitive or proprietary pattern detected: $MATCHED"
+            exit 1
+          fi
+          echo "✅ Leak audit passed (0 sensitive files matched)."
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Solution Dependencies
+        run: dotnet restore CoreDeck.slnx
+
+      - name: Compile Solution (Release)
+        run: dotnet build CoreDeck.slnx --no-restore --configuration Release
+
+      - name: Execute Automated Test Suite
+        run: dotnet test CoreDeck.slnx --no-build --configuration Release --verbosity normal
+
+      - name: Verify Commit Author & Actor Identity
+        id: identity
+        run: |
+          AUTHOR_NAME=$(git log -1 --format='%an')
+          AUTHOR_EMAIL=$(git log -1 --format='%ae')
+          ACTOR="${{ github.actor }}"
+
+          echo "Commit Author Name : $AUTHOR_NAME"
+          echo "Commit Author Email: $AUTHOR_EMAIL"
+          echo "GitHub Actor       : $ACTOR"
+
+          echo "author_name=$AUTHOR_NAME" >> "$GITHUB_OUTPUT"
+          echo "author_email=$AUTHOR_EMAIL" >> "$GITHUB_OUTPUT"
+
+          if [ "$ACTOR" = "MaskirovkaOtdel" ] && [ "$AUTHOR_NAME" = "MaskirovkaOtdel" ] && [ "$AUTHOR_EMAIL" = "thod.efstathiadis@gmail.com" ]; then
+            echo "✅ Verified Repository Owner (MaskirovkaOtdel <thod.efstathiadis@gmail.com>). Eligible for automated merge to main."
+            echo "is_trusted_owner=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "⚠️ Third-party or unverified contributor detected. Routing to mandatory owner review PR."
+            echo "is_trusted_owner=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  trusted-owner-auto-merge:
+    name: Trusted Owner Auto-PR & Branch Sync (dev ➔ main)
+    needs: verify-and-audit
+    if: github.event_name == 'push' && github.ref_name != 'main' && needs.verify-and-audit.outputs.is_trusted_owner == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create, Merge PR & Synchronize Branches (dev == main)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "MaskirovkaOtdel"
+          git config user.email "thod.efstathiadis@gmail.com"
+
+          git fetch origin main "$SOURCE_BRANCH"
+
+          # Check if source branch has commits ahead of main
+          AHEAD_COUNT=$(git rev-list --count origin/main..origin/"$SOURCE_BRANCH")
+          if [ "$AHEAD_COUNT" -eq 0 ]; then
+            echo "Branch $SOURCE_BRANCH is already in sync with main."
+            exit 0
+          fi
+
+          # Create PR if one does not already exist for audit trail, then merge to main
+          EXISTING_PR=$(gh pr list --head "$SOURCE_BRANCH" --base main --state open --json number --jq '.[0].number' || true)
+          if [ -z "$EXISTING_PR" ] || [ "$EXISTING_PR" = "null" ]; then
+            LAST_SUBJECT=$(git log -1 --format='%s' origin/"$SOURCE_BRANCH")
+            PR_URL=$(gh pr create \
+              --base main \
+              --head "$SOURCE_BRANCH" \
+              --title "$LAST_SUBJECT" \
+              --body "Automated Gatekeeper PR for verified owner **MaskirovkaOtdel** (\`thod.efstathiadis@gmail.com\`). All CI build, unit test, and leak checks passed." || true)
+            echo "Created PR: $PR_URL"
+            EXISTING_PR=$(gh pr list --head "$SOURCE_BRANCH" --base main --state open --json number --jq '.[0].number' || true)
+          fi
+
+          if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
+            gh pr merge "$EXISTING_PR" --merge --admin || {
+              git checkout main
+              git merge --no-ff origin/"$SOURCE_BRANCH" -m "Merge branch '$SOURCE_BRANCH' into main (Verified Owner Auto-Merge)"
+              git push origin main
+            }
+          else
+            git checkout main
+            git merge --ff-only origin/"$SOURCE_BRANCH" || git merge --no-ff origin/"$SOURCE_BRANCH" -m "Merge branch '$SOURCE_BRANCH' into main"
+            git push origin main
+          fi
+
+          # Post-Merge Branch Auto-Sync: ensure dev and main share the exact same commit SHA
+          git fetch origin main
+          git push origin refs/remotes/origin/main:refs/heads/"$SOURCE_BRANCH" --force-with-lease
+          echo "✅ Synchronized $SOURCE_BRANCH and main to identical SHA: $(git rev-parse origin/main)"
+
+  third-party-pr-quarantine:
+    name: Third-Party Contributor PR Quarantine (Requires Owner Approval)
+    needs: verify-and-audit
+    if: github.event_name == 'push' && github.ref_name != 'main' && needs.verify-and-audit.outputs.is_trusted_owner != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Open Review Pull Request for @MaskirovkaOtdel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+          AUTHOR_NAME: ${{ needs.verify-and-audit.outputs.author_name }}
+          AUTHOR_EMAIL: ${{ needs.verify-and-audit.outputs.author_email }}
+        run: |
+          EXISTING_PR=$(gh pr list --head "$SOURCE_BRANCH" --base main --state open --json number --jq '.[0].number' || true)
+          if [ -z "$EXISTING_PR" ] || [ "$EXISTING_PR" = "null" ]; then
+            LAST_SUBJECT=$(git log -1 --format='%s')
+            gh pr create \
+              --base main \
+              --head "$SOURCE_BRANCH" \
+              --title "[3rd-Party Review Required] $LAST_SUBJECT" \
+              --body "### 🔒 Mandatory Owner Confirmation Required
+          This contribution was submitted by **$AUTHOR_NAME** (\`$AUTHOR_EMAIL\`, GitHub actor: \`@${{ github.actor }}\`).
+
+          - **Automated CI & Tests:** ✅ Passed
+          - **Auto-Merge Status:** ⛔ Blocked (Third-party safety policy)
+          - **Action Required:** @MaskirovkaOtdel must review and explicitly approve before merging into \`main\`." \
+              --reviewer MaskirovkaOtdel || true
+          else
+            echo "Open PR #$EXISTING_PR already exists and awaits @MaskirovkaOtdel confirmation."
+          fi

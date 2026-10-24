@@ -1,0 +1,151 @@
+name: Smart SemVer Auto-Release & Post-Merge Branch Sync
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-and-release:
+    name: Branch Sync & Filtered SemVer Release Engine
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository (Full History & Tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post-Merge Branch Auto-Sync (main ➔ dev)
+        run: |
+          git config user.name "MaskirovkaOtdel"
+          git config user.email "thod.efstathiadis@gmail.com"
+          echo "Synchronizing 'dev' branch to match 'main' SHA ($(git rev-parse HEAD))..."
+          git push origin HEAD:refs/heads/dev --force-with-lease || echo "Notice: 'dev' branch will be created/synced on next push."
+
+      - name: Evaluate Commits & Compute Smart SemVer Bump
+        id: semver
+        run: |
+          git fetch --tags --force
+
+          LATEST_TAG=$(git tag -l "v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v0.1.0"
+            COMMIT_RANGE="HEAD"
+          else
+            COMMIT_RANGE="${LATEST_TAG}..HEAD"
+          fi
+
+          echo "Latest SemVer Tag: $LATEST_TAG"
+
+          # Check if HEAD is already tagged with a vX.Y.Z tag
+          HEAD_TAG=$(git tag --points-at HEAD "v[0-9]*.[0-9]*.[0-9]*" | head -n 1)
+          if [ -n "$HEAD_TAG" ]; then
+            echo "HEAD is already tagged at $HEAD_TAG. Generating/updating release if needed."
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "new_tag=$HEAD_TAG" >> "$GITHUB_OUTPUT"
+            echo "bump_type=existing" >> "$GITHUB_OUTPUT"
+          else
+            BUMP="none"
+            while IFS= read -r SUBJECT; do
+              [ -z "$SUBJECT" ] && continue
+
+              # Skip explicit bypass markers or merge commit wrappers
+              if echo "$SUBJECT" | grep -E -q '(\[skip release\]|\[no release\]|^Merge )'; then
+                continue
+              fi
+
+              # 1. Major / Changebreaker: BREAKING CHANGE, feat!:, major:
+              if echo "$SUBJECT" | grep -E -q '(BREAKING CHANGE|^[a-zA-Z]+(\([^)]+\))?!:|^major(\([^)]+\))?:)'; then
+                BUMP="major"
+                break
+              fi
+
+              # 2. Minor / Normal Update: feat:, update:
+              if echo "$SUBJECT" | grep -E -q '^(feat|update)(\([^)]+\))?:'; then
+                BUMP="minor"
+              fi
+
+              # 3. Patch / Small Fix: fix:, hotfix:, perf:, security:
+              if [ "$BUMP" != "minor" ] && echo "$SUBJECT" | grep -E -q '^(fix|hotfix|perf|security)(\([^)]+\))?:'; then
+                BUMP="patch"
+              fi
+            done < <(git log "$COMMIT_RANGE" --format='%s')
+
+            # Also inspect commit bodies for BREAKING CHANGE:
+            if [ "$BUMP" != "major" ] && git log "$COMMIT_RANGE" --format='%b' | grep -F -q "BREAKING CHANGE:"; then
+              BUMP="major"
+            fi
+
+            if [ "$BUMP" = "none" ]; then
+              echo "ℹ️ Only non-release commits (docs/chore/test/ci/style) detected since $LATEST_TAG. Skipping tag & release creation to prevent release spam."
+              echo "should_release=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            VERSION="${LATEST_TAG#v}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+            case "$BUMP" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+
+            NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+            echo "Computed SemVer Bump ($BUMP): $LATEST_TAG ➔ $NEW_TAG"
+
+            git config user.name "MaskirovkaOtdel"
+            git config user.email "thod.efstathiadis@gmail.com"
+            git tag -a "$NEW_TAG" -m "Release $NEW_TAG ($BUMP update)"
+            git push origin "$NEW_TAG"
+
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "new_tag=$NEW_TAG" >> "$GITHUB_OUTPUT"
+            echo "bump_type=$BUMP" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Compile Categorized Release Notes
+          TARGET_TAG=$(grep '^new_tag=' "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2)
+          NOTES_FILE="RELEASE_NOTES.md"
+          {
+            echo "## ⚡ CoreDeck Release \`$TARGET_TAG\`"
+            echo ""
+            echo "### 🚀 Features & Major Updates"
+            FEATS=$(git log "$COMMIT_RANGE" --no-merges --grep='^\(feat\|update\|major\)' -E --format='- %s (`%h`)' || true)
+            if [ -n "$FEATS" ]; then echo "$FEATS"; else echo "- No feature additions in this release."; fi
+            echo ""
+            echo "### 🐛 Fixes, Patches & Security"
+            FIXES=$(git log "$COMMIT_RANGE" --no-merges --grep='^\(fix\|hotfix\|perf\|security\)' -E --format='- %s (`%h`)' || true)
+            if [ -n "$FIXES" ]; then echo "$FIXES"; else echo "- No hotfixes in this release."; fi
+            echo ""
+            echo "### 🧰 Maintenance, Tests & CI"
+            CHORES=$(git log "$COMMIT_RANGE" --no-merges --grep='^\(docs\|chore\|test\|ci\|refactor\|style\)' -E --format='- %s (`%h`)' || true)
+            if [ -n "$CHORES" ]; then echo "$CHORES"; else echo "- Routine verification and pipeline maintenance."; fi
+          } > "$NOTES_FILE"
+
+      - name: Publish 1:1 GitHub Release
+        if: steps.semver.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.semver.outputs.new_tag }}
+          name: "CoreDeck ${{ steps.semver.outputs.new_tag }}"
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
