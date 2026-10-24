@@ -12,6 +12,11 @@ namespace Final_Efstathiadis_Theodors.Controllers
         private readonly UserManager<ApplicationUser>? _userManager;
         private const int PageSize = 12;
 
+        private static readonly string[] KnownBrands =
+        {
+            "NVIDIA", "AMD", "Intel", "ASUS", "Razer", "Corsair", "Valve", "Sony", "Samsung", "MSI"
+        };
+
         public ProductController(ApplicationDbContext context, UserManager<ApplicationUser>? userManager = null)
         {
             _context = context;
@@ -26,7 +31,8 @@ namespace Final_Efstathiadis_Theodors.Controllers
             decimal? minPrice = null,
             decimal? maxPrice = null,
             bool inStockOnly = false,
-            string sortOrder = "newest")
+            string sortOrder = "newest",
+            string brand = "")
         {
             var query = _context.Products
                 .Include(p => p.Category)
@@ -39,11 +45,22 @@ namespace Final_Efstathiadis_Theodors.Controllers
                 query = query.Where(p => p.CategoryId == categoryId);
             }
 
+            // Filter by hardware brand/manufacturer
+            if (!string.IsNullOrWhiteSpace(brand))
+            {
+                var brandTerm = brand.Trim().ToLowerInvariant();
+                query = query.Where(p =>
+                    p.Name.ToLower().Contains(brandTerm) ||
+                    p.Description.ToLower().Contains(brandTerm));
+            }
+
             // Filter by search keyword
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var term = search.Trim();
-                query = query.Where(p => p.Name.Contains(term) || p.Description.Contains(term));
+                var term = search.Trim().ToLowerInvariant();
+                query = query.Where(p =>
+                    p.Name.ToLower().Contains(term) ||
+                    p.Description.ToLower().Contains(term));
             }
 
             // Filter by price bounds
@@ -84,6 +101,8 @@ namespace Final_Efstathiadis_Theodors.Controllers
 
             ViewData["CategoryId"] = categoryId;
             ViewData["SearchTerm"] = search;
+            ViewData["SelectedBrand"] = brand?.Trim() ?? "";
+            ViewData["AvailableBrands"] = KnownBrands;
             ViewData["MinPrice"] = minPrice;
             ViewData["MaxPrice"] = maxPrice;
             ViewData["InStockOnly"] = inStockOnly;
@@ -93,7 +112,7 @@ namespace Final_Efstathiadis_Theodors.Controllers
             ViewData["TotalCount"] = totalCount;
             ViewData["Categories"] = await _context.Categories.ToListAsync();
 
-            if (User.Identity?.IsAuthenticated == true && _userManager != null)
+            if (User?.Identity?.IsAuthenticated == true && _userManager != null)
             {
                 var user = await _userManager.GetUserAsync(User);
                 if (user != null)
@@ -126,7 +145,7 @@ namespace Final_Efstathiadis_Theodors.Controllers
 
             ViewData["Categories"] = await _context.Categories.ToListAsync();
 
-            if (User.Identity?.IsAuthenticated == true && _userManager != null)
+            if (User?.Identity?.IsAuthenticated == true && _userManager != null)
             {
                 var user = await _userManager.GetUserAsync(User);
                 if (user != null)

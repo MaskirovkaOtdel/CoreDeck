@@ -364,6 +364,34 @@ public sealed class ProductCatalogFilterTests
         Assert.IsNotNull(model);
         Assert.HasCount(2, model);
     }
+
+    [TestMethod]
+    public async Task Index_FilterByBrandCaseInsensitive_ReturnsBrandMatches()
+    {
+        using var context = CreateSeededContext("Catalog_BrandFilter");
+        var controller = new ProductController(context); // Also verifies null-safe User principal without HttpContext
+
+        var result = await controller.Index(brand: "  intel ") as ViewResult;
+        Assert.IsNotNull(result);
+        var model = result.Model as List<Product>;
+        Assert.IsNotNull(model);
+        Assert.HasCount(1, model);
+        Assert.AreEqual("Intel Core Ultra 9 285K", model[0].Name);
+        Assert.AreEqual("intel", result.ViewData["SelectedBrand"]);
+    }
+
+    [TestMethod]
+    public async Task Details_ValidProductWithoutHttpContext_ReturnsViewSafely()
+    {
+        using var context = CreateSeededContext("Catalog_DetailsSafe");
+        var controller = new ProductController(context);
+
+        var result = await controller.Details(1) as ViewResult;
+        Assert.IsNotNull(result);
+        var model = result.Model as Product;
+        Assert.IsNotNull(model);
+        Assert.AreEqual("NVIDIA GeForce RTX 5090", model.Name);
+    }
 }
 
 [TestClass]
