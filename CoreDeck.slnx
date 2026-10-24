@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="CoreDeck.csproj" />
+  <Project Path="tests/CoreDeck.Tests/CoreDeck.Tests.csproj" />
 </Solution>
